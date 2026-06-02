@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduIA — Monitor de Aprendizagem</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+<body class="auth-locked">
+
+<!-- LOGIN -->
+<section class="login-screen" id="login-screen">
+  <div class="login-panel">
+    <div class="login-brand">EduIA</div>
+    <div class="login-kicker">Monitor de Aprendizagem</div>
+    <div class="login-title">Acesso dos professores</div>
+    <div class="login-sub">Entre para acompanhar turmas, intervenções e relatórios pedagógicos. Este acesso é demonstrativo para apresentação do TCC.</div>
+    <form class="login-form" id="login-form">
+      <div>
+        <div class="login-label">E-mail institucional</div>
+        <input class="login-input" id="login-email" type="email" autocomplete="username" placeholder="professor@eduia.com" required>
+      </div>
+      <div>
+        <div class="login-label">Senha</div>
+        <input class="login-input" id="login-password" type="password" autocomplete="current-password" placeholder="123456" required>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button class="login-submit" type="submit">Entrar no dashboard</button>
+    </form>
+    <div class="demo-credentials">
+      <strong style="color:var(--text);font-weight:600;">Usuários demo</strong><br>
+      professor@eduia.com / 123456<br>
+      coordenador@eduia.com / 123456
+    </div>
+  </div>
+  <div class="login-visual">
+    <div class="login-preview">
+      <div class="prototype-note">Protótipo acadêmico com dados simulados. Não use dados reais de estudantes nesta versão sem backend e autenticação real.</div>
+      <div class="login-preview-grid">
+        <div class="preview-card"><div class="preview-label">Alunos monitorados</div><div class="preview-value" style="color:var(--green)">90</div></div>
+        <div class="preview-card"><div class="preview-label">Risco alto</div><div class="preview-value" style="color:var(--red)">19</div></div>
+        <div class="preview-card"><div class="preview-label">Acurácia modelo</div><div class="preview-value" style="color:var(--blue)">87%</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo"><div class="logo-mark">EduIA</div><div class="logo-sub">Monitor de Aprendizagem</div></div>
+  <nav class="nav">
+    <div class="nav-label">Visao geral</div>
+    <div class="nav-item active" id="nav-dashboard" onclick="goTo('dashboard',this)"><span class="nav-dot"></span>Dashboard</div>
+    <div class="nav-item" id="nav-alunos" onclick="goTo('alunos',this)"><span class="nav-dot"></span>Alunos</div>
+    <div class="nav-item" id="nav-intervencoes" onclick="goTo('intervencoes',this)"><span class="nav-dot"></span>Intervenções</div>
+    <div class="nav-label">Analise</div>
+    <div class="nav-item" id="nav-relatorios" onclick="goTo('relatorios',this)"><span class="nav-dot"></span>Relatórios</div>
+    <div class="nav-item" id="nav-modelo" onclick="goTo('modelo',this)"><span class="nav-dot"></span>Modelo de IA</div>
+    <div class="nav-label">Escola</div>
+    <div class="nav-item" id="nav-turmas" onclick="goTo('turmas',this)"><span class="nav-dot"></span>Turmas</div>
+    <div class="nav-item" id="nav-config" onclick="goTo('config',this)"><span class="nav-dot"></span>Configurações</div>
+  </nav>
+  <div class="sidebar-footer">Modelo: Random Forest<br>Atualizado: abr. 2025<br>Acurácia: <span style="color:var(--green);font-family:var(--mono)">87.3%</span><br><span style="color:var(--blue);">Dados simulados para TCC</span></div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div><div class="page-title" id="topbar-title">Monitoramento de Turmas</div><div class="breadcrumb" id="topbar-sub">Escola Estadual · São Luís, MA</div></div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="turma-pills" id="turma-pills">
+        <button class="pill active" onclick="setTurma('7A',this)">7 A</button>
+        <button class="pill" onclick="setTurma('8B',this)">8 B</button>
+        <button class="pill" onclick="setTurma('9C',this)">9 C</button>
+      </div>
+      <div class="school-badge"><b>E.E. Dom Bosco</b></div>
+      <div class="user-chip" id="user-chip">Professor demo</div>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="screen-dashboard" class="screen active">
+      <div class="metrics" id="metrics"></div>
+      <div class="row row-3" style="margin-bottom:14px;">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Alunos por risco</span><span class="panel-hint">Clique para detalhar</span></div>
+          <div class="panel-body" style="padding:0;">
+            <table class="data-table">
+              <thead><tr><th style="padding-left:18px;">Aluno</th><th>Risco</th><th>Probabilidade</th><th>Freq.</th><th>Mat.</th><th>Port.</th></tr></thead>
+              <tbody id="aluno-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="detail-panel" id="detail-panel"><div class="detail-empty"><span class="icon">&#8592;</span>Selecione um aluno<br>para ver o diagnóstico<br>e a intervenção sugerida</div></div>
+      </div>
+      <div class="row row-2">
+        <div class="panel"><div class="panel-header"><span class="panel-title">Distribuicao de risco</span><span class="panel-hint" id="dist-label"></span></div><div class="panel-body"><div class="chart-wrap"><canvas id="chartDist"></canvas></div></div></div>
+        <div class="panel"><div class="panel-header"><span class="panel-title">Desempenho da turma</span><span class="panel-hint">Mat. vs Port.</span></div><div class="panel-body"><div class="chart-wrap"><canvas id="chartPerf"></canvas></div></div></div>
+      </div>
+      <div class="row" style="grid-template-columns:1fr 2fr;">
+        <div class="panel"><div class="panel-header"><span class="panel-title">Metricas do modelo</span></div><div class="panel-body">
+          <div class="model-row"><span class="model-key">Algoritmo</span><span class="model-val" style="color:var(--green)">Random Forest</span></div>
+          <div class="model-row"><span class="model-key">Acurácia</span><span class="model-val">87.3%</span></div>
+          <div class="model-row"><span class="model-key">F1-Score</span><span class="model-val">84.9%</span></div>
+          <div class="model-row"><span class="model-key">AUC-ROC</span><span class="model-val">0.921</span></div>
+          <div class="model-row"><span class="model-key">Amostras</span><span class="model-val">2.000</span></div>
+        </div></div>
+        <div class="panel"><div class="panel-header"><span class="panel-title">Importancia das variaveis — SHAP global</span></div><div class="panel-body" id="global-shap"></div></div>
+      </div>
+    </div>
+
+    <!-- ALUNOS -->
+    <div id="screen-alunos" class="screen">
+      <div class="search-bar">
+        <input class="search-input" type="text" id="search-input" placeholder="Buscar aluno pelo nome..." oninput="filtrarAlunos(this.value)">
+        <button class="filter-btn active" onclick="setFiltro('todos',this)">Todos</button>
+        <button class="filter-btn" onclick="setFiltro('alto',this)">Risco alto</button>
+        <button class="filter-btn" onclick="setFiltro('medio',this)">Risco medio</button>
+        <button class="filter-btn" onclick="setFiltro('baixo',this)">Sem risco</button>
+      </div>
+      <div id="alunos-list"></div>
+    </div>
+
+    <!-- INTERVENCOES -->
+    <div id="screen-intervencoes" class="screen">
+      <div class="int-summary">
+        <div class="int-sum-card"><div class="int-sum-val" style="color:var(--amber)" id="int-total">0</div><div class="int-sum-label">Intervenções ativas</div></div>
+        <div class="int-sum-card"><div class="int-sum-val" style="color:var(--red)" id="int-pendentes">0</div><div class="int-sum-label">Pendentes</div></div>
+        <div class="int-sum-card"><div class="int-sum-val" style="color:var(--green)" id="int-concluidas">0</div><div class="int-sum-label">Concluídas</div></div>
+      </div>
+      <div id="intervencoes-list"></div>
+    </div>
+
+    <!-- RELATORIOS -->
+    <div id="screen-relatorios" class="screen">
+      <div id="relatorios-content"></div>
+    </div>
+
+    <!-- MODELO -->
+    <div id="screen-modelo" class="screen">
+      <div id="modelo-content"></div>
+    </div>
+
+    <!-- TURMAS -->
+    <div id="screen-turmas" class="screen">
+      <div id="turmas-content"></div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="screen-config" class="screen">
+      <div id="config-content"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="fecharModal(event)">
+  <div class="modal" id="modal-box">
+    <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="js/dados.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/navegacao.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/alunos.js"></script>
+<script src="js/intervencoes.js"></script>
+<script src="js/relatorios.js"></script>
+<script src="js/modelo.js"></script>
+<script src="js/turmas.js"></script>
+<script src="js/config.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
