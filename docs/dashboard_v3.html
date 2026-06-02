@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduIA — Monitor de Aprendizagem</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0f1117;--surface:#171b26;--surface2:#1e2333;--border:rgba(255,255,255,0.07);--text:#e8eaf0;--muted:#7a7f94;--red:#ff4d6d;--red-dim:rgba(255,77,109,0.12);--amber:#f5a623;--amber-dim:rgba(245,166,35,0.12);--green:#2dd4a0;--green-dim:rgba(45,212,160,0.12);--blue:#4f8ef7;--blue-dim:rgba(79,142,247,0.12);--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;display:flex;}
+body.auth-locked{display:block;}
+body.auth-locked .sidebar,body.auth-locked .main{display:none;}
+
+/* ── Sidebar ── */
+.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;flex-shrink:0;}
+.logo{padding:0 20px 24px;border-bottom:1px solid var(--border);}
+.logo-mark{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green);}
+.logo-sub{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+.nav{padding:16px 12px;flex:1;}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);padding:0 8px;margin-bottom:6px;margin-top:16px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13px;color:var(--muted);cursor:pointer;transition:all .15s;user-select:none;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:var(--green-dim);color:var(--green);}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.6;}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.page-title{font-size:15px;font-weight:600;}
+.breadcrumb{font-size:12px;color:var(--muted);}
+.school-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+.school-badge b{color:var(--text);font-weight:500;}
+.user-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+.logout-btn{border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:20px;padding:5px 12px;font-size:12px;font-family:var(--sans);cursor:pointer;transition:all .15s;}
+.logout-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+.turma-pills{display:flex;gap:6px;}
+.pill{padding:5px 12px;border-radius:20px;font-size:12px;border:1px solid var(--border);cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);font-family:var(--sans);}
+.pill:hover{border-color:var(--green);color:var(--green);}
+.pill.active{background:var(--green);color:#0f1117;border-color:var(--green);font-weight:600;}
+.content{flex:1;overflow-y:auto;padding:24px 28px;}
+.screen{display:none;}.screen.active{display:block;}
+
+/* ── Metrics ── */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;cursor:pointer;transition:border-color .15s;}
+.metric-card:hover{border-color:rgba(45,212,160,0.3);}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--green));}
+.metric-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;}
+.metric-val{font-family:var(--mono);font-size:28px;font-weight:700;line-height:1;}
+.metric-sub{font-size:11px;color:var(--muted);margin-top:6px;}
+.metric-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;margin-top:6px;}
+
+/* ── Panels ── */
+.row{display:grid;gap:14px;margin-bottom:14px;}
+.row-2{grid-template-columns:1fr 1fr;}.row-3{grid-template-columns:2fr 1fr;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel-title{font-size:13px;font-weight:600;}
+.panel-hint{font-size:11px;color:var(--muted);}
+.panel-body{padding:16px 18px;}
+.chart-wrap{position:relative;height:180px;}
+
+/* ── Table ── */
+.data-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.data-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:0 10px 10px;border-bottom:1px solid var(--border);font-weight:500;}
+.data-table td{padding:10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr{cursor:pointer;transition:background .1s;}
+.data-table tr:hover td{background:var(--surface2);}
+.data-table tr.selected td{background:rgba(45,212,160,0.05);}
+.avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.name-cell{display:flex;align-items:center;gap:10px;}
+.risk-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--mono);}
+.risk-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
+.r-alto{color:var(--red);background:var(--red-dim);}
+.r-medio{color:var(--amber);background:var(--amber-dim);}
+.r-baixo{color:var(--green);background:var(--green-dim);}
+.prob-bar-wrap{display:flex;align-items:center;gap:8px;}
+.prob-bar-bg{flex:1;height:4px;background:var(--surface2);border-radius:4px;}
+.prob-bar-fill{height:4px;border-radius:4px;}
+.prob-val{font-family:var(--mono);font-size:11px;color:var(--muted);width:32px;text-align:right;}
+
+/* ── Detail panel ── */
+.detail-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.detail-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6;}
+.detail-empty .icon{display:block;font-size:28px;margin-bottom:10px;opacity:.3;}
+.mini-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.mini-card{background:var(--surface2);border-radius:8px;padding:10px 12px;}
+.mini-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
+.mini-val{font-family:var(--mono);font-size:18px;font-weight:700;}
+.shap-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.shap-label{font-size:11px;color:var(--muted);width:120px;flex-shrink:0;}
+.shap-track{flex:1;height:6px;background:var(--surface2);border-radius:4px;}
+.shap-fill{height:6px;border-radius:4px;}
+.shap-pct{font-family:var(--mono);font-size:11px;color:var(--muted);width:30px;text-align:right;}
+.int-box{background:var(--amber-dim);border:1px solid rgba(245,166,35,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--amber);line-height:1.6;margin-top:10px;}
+.int-box strong{display:block;font-weight:600;margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;}
+
+/* ── Model info ── */
+.model-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.model-row:last-child{border-bottom:none;}
+.model-key{font-size:12px;color:var(--muted);}
+.model-val{font-family:var(--mono);font-size:13px;font-weight:700;}
+
+/* ── Tela Alunos ── */
+.search-bar{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.search-input{flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;}
+.search-input:focus{border-color:var(--green);}
+.search-input::placeholder{color:var(--muted);}
+.filter-btn{padding:7px 13px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--sans);transition:all .15s;white-space:nowrap;}
+.filter-btn:hover,.filter-btn.active{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+.aluno-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
+.aluno-card:hover{border-color:rgba(45,212,160,0.3);}
+.aluno-card.expanded{border-color:var(--green);}
+.ac-header{display:grid;grid-template-columns:36px 1fr auto auto auto auto auto;align-items:center;gap:14px;}
+.ac-name{font-size:13px;font-weight:500;}
+.ac-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.ac-stat{text-align:center;min-width:52px;}
+.ac-stat-val{font-family:var(--mono);font-size:14px;font-weight:700;}
+.ac-stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.ac-arrow{font-size:14px;color:var(--muted);transition:transform .2s;user-select:none;}
+.ac-arrow.open{transform:rotate(180deg);}
+.ac-detail{background:var(--surface2);border-radius:8px;padding:16px;margin-top:12px;display:none;}
+.ac-detail.open{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+/* ── Tela Intervenções ── */
+.int-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
+.int-sum-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+.int-sum-val{font-family:var(--mono);font-size:26px;font-weight:700;margin-bottom:4px;}
+.int-sum-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+.section-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:20px 0 10px;display:flex;align-items:center;gap:6px;font-weight:600;}
+.int-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px;transition:border-color .15s;}
+.int-card:hover{border-color:rgba(255,255,255,0.15);}
+.int-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.int-aluno{display:flex;align-items:center;gap:10px;}
+.int-nome{font-size:13px;font-weight:600;}
+.int-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:default;}
+.s-pendente{background:var(--amber-dim);color:var(--amber);}
+.s-andamento{background:var(--blue-dim);color:var(--blue);}
+.s-concluida{background:var(--green-dim);color:var(--green);}
+.int-texto{font-size:12px;color:var(--muted);line-height:1.7;border-left:2px solid var(--border);padding-left:12px;margin-bottom:12px;}
+.progress-wrap{margin-bottom:12px;}
+.progress-top{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px;}
+.progress-bg{height:6px;background:var(--surface2);border-radius:4px;}
+.progress-fill{height:6px;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.int-meta{display:flex;flex-wrap:wrap;gap:14px;padding:10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:12px;}
+.int-meta-item{font-size:11px;color:var(--muted);}
+.int-meta-item b{color:var(--text);font-weight:500;}
+.int-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-int{padding:6px 13px;border-radius:6px;border:1px solid var(--border);background:transparent;font-size:11px;cursor:pointer;font-family:var(--sans);color:var(--muted);transition:all .15s;white-space:nowrap;}
+.btn-int:hover{background:var(--surface2);color:var(--text);border-color:rgba(255,255,255,0.2);}
+.btn-int.primary{border-color:var(--green);color:var(--green);}
+.btn-int.primary:hover{background:var(--green-dim);}
+.btn-int.warn{border-color:var(--amber);color:var(--amber);}
+.btn-int.warn:hover{background:var(--amber-dim);}
+.btn-int.concluido{border-color:var(--muted);color:var(--muted);cursor:not-allowed;opacity:.5;}
+
+/* ── Tela Relatórios ── */
+.relatorio-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;}
+.rel-title{font-size:13px;font-weight:600;margin-bottom:4px;}
+.rel-sub{font-size:11px;color:var(--muted);margin-bottom:14px;}
+.rel-stats{display:flex;gap:24px;margin-bottom:14px;}
+.rel-stat{text-align:center;}
+.rel-stat-val{font-family:var(--mono);font-size:20px;font-weight:700;}
+.rel-stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.rel-actions{display:flex;gap:8px;}
+
+/* ── Tela Modelo ── */
+.modelo-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.conf-matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:11px;}
+.cm-cell{background:var(--surface2);border-radius:4px;padding:8px;text-align:center;}
+.cm-cell.header{background:transparent;color:var(--muted);font-size:10px;}
+.cm-cell.diagonal{background:var(--green-dim);color:var(--green);font-weight:700;}
+
+/* ── Tela Configurações ── */
+.config-section{margin-bottom:24px;}
+.config-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:12px;}
+.config-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.config-row:last-child{border-bottom:none;}
+.config-label{font-size:13px;}
+.config-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.toggle{width:36px;height:20px;background:var(--surface2);border-radius:10px;cursor:pointer;position:relative;transition:background .2s;border:1px solid var(--border);flex-shrink:0;}
+.toggle.on{background:var(--green);}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;background:#fff;border-radius:50%;transition:left .2s;}
+.toggle.on::after{left:19px;}
+.config-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--sans);font-size:13px;width:80px;outline:none;}
+.config-input:focus{border-color:var(--green);}
+
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px;position:relative;}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:6px;}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:18px;}
+.modal-close{position:absolute;top:16px;right:16px;background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;}
+.modal-close:hover{color:var(--text);}
+.modal-body{font-size:13px;line-height:1.7;color:var(--muted);}
+.modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+.modal-btn{padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--sans);transition:all .15s;}
+.modal-btn.cancel{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.modal-btn.cancel:hover{background:var(--surface2);color:var(--text);}
+.modal-btn.confirm{background:var(--green);border:1px solid var(--green);color:#0f1117;font-weight:600;}
+.modal-btn.confirm:hover{opacity:.85;}
+.modal-btn.warn{background:var(--amber);border:1px solid var(--amber);color:#0f1117;font-weight:600;}
+.modal-btn.warn:hover{opacity:.85;}
+.hist-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.hist-item:last-child{border-bottom:none;}
+.hist-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.hist-text{font-size:12px;line-height:1.5;}
+.hist-date{font-size:10px;color:var(--muted);margin-top:2px;}
+textarea.modal-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;resize:vertical;min-height:80px;margin-top:10px;}
+textarea.modal-textarea:focus{border-color:var(--green);}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;z-index:2000;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{border-color:var(--green);color:var(--green);}
+.toast.info{border-color:var(--blue);color:var(--blue);}
+.toast.warn{border-color:var(--amber);color:var(--amber);}
+
+/* ── Login demonstrativo ── */
+.login-screen{min-height:100vh;display:grid;grid-template-columns:minmax(320px,420px) 1fr;background:var(--bg);}
+body:not(.auth-locked) .login-screen{display:none;}
+.login-panel{background:var(--surface);border-right:1px solid var(--border);padding:48px 42px;display:flex;flex-direction:column;justify-content:center;}
+.login-brand{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.login-kicker{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:32px;}
+.login-title{font-size:22px;font-weight:600;margin-bottom:8px;}
+.login-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;}
+.login-form{display:grid;gap:12px;}
+.login-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px;}
+.login-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;}
+.login-input:focus{border-color:var(--green);}
+.login-submit{background:var(--green);border:1px solid var(--green);color:#0f1117;border-radius:8px;padding:11px 14px;font-family:var(--sans);font-weight:700;cursor:pointer;margin-top:4px;}
+.login-error{min-height:18px;font-size:12px;color:var(--red);}
+.demo-credentials{margin-top:18px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--muted);line-height:1.7;}
+.login-visual{padding:48px;display:flex;align-items:center;justify-content:center;}
+.login-preview{max-width:720px;width:100%;display:grid;gap:14px;}
+.login-preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.preview-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.preview-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px;}
+.preview-value{font-family:var(--mono);font-size:30px;font-weight:700;}
+.prototype-note{background:var(--blue-dim);border:1px solid rgba(79,142,247,.25);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--blue);line-height:1.6;}
+.chart-fallback{height:100%;min-height:150px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--amber);font-size:12px;line-height:1.6;padding:16px;background:var(--amber-dim);border:1px solid rgba(245,166,35,.2);border-radius:8px;}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:4px;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.metric-card{animation:fadeUp .3s both;}
+.metric-card:nth-child(1){animation-delay:.05s;}.metric-card:nth-child(2){animation-delay:.10s;}.metric-card:nth-child(3){animation-delay:.15s;}.metric-card:nth-child(4){animation-delay:.20s;}
+
+@media (max-width: 1024px){
+  body{display:block;}
+  .sidebar{width:100%;min-height:auto;border-right:0;border-bottom:1px solid var(--border);padding:16px 0;}
+  .nav{display:flex;overflow-x:auto;gap:6px;padding:12px;}
+  .nav-label,.sidebar-footer{display:none;}
+  .nav-item{white-space:nowrap;flex-shrink:0;}
+  .main{min-height:calc(100vh - 92px);}
+  .metrics,.int-summary,.login-preview-grid{grid-template-columns:repeat(2,1fr);}
+  .row-2,.row-3,.modelo-grid{grid-template-columns:1fr!important;}
+  .ac-header{grid-template-columns:36px 1fr auto;gap:10px;}
+  .ac-stat{display:none;}
+  .ac-detail.open{grid-template-columns:1fr;}
+}
+
+@media (max-width: 720px){
+  .login-screen{grid-template-columns:1fr;}
+  .login-panel{border-right:0;padding:32px 22px;}
+  .login-visual{display:none;}
+  .content{padding:16px;}
+  .topbar{padding:12px 16px;align-items:flex-start;}
+  .topbar>div:last-child{width:100%;justify-content:flex-start;flex-wrap:wrap;}
+  .metrics,.int-summary,.login-preview-grid,.mini-metrics{grid-template-columns:1fr;}
+  .panel-body{overflow-x:auto;}
+  .data-table{min-width:620px;}
+  .rel-stats{flex-wrap:wrap;gap:14px;}
+  .rel-actions,.int-actions{flex-direction:column;align-items:stretch;}
+  .btn-int,.modal-btn{width:100%;}
+  .modal{max-width:calc(100vw - 24px);padding:20px;}
+  .modal-actions{flex-direction:column-reverse;}
+  .config-row{align-items:flex-start;gap:12px;flex-direction:column;}
+  .config-input{width:100%!important;}
+  .toast{left:16px;right:16px;bottom:16px;text-align:center;}
+}
+</style>
+</head>
+<body class="auth-locked">
+
+<!-- LOGIN -->
+<section class="login-screen" id="login-screen">
+  <div class="login-panel">
+    <div class="login-brand">EduIA</div>
+    <div class="login-kicker">Monitor de Aprendizagem</div>
+    <div class="login-title">Acesso dos professores</div>
+    <div class="login-sub">Entre para acompanhar turmas, intervenções e relatórios pedagógicos. Este acesso é demonstrativo para apresentação do TCC.</div>
+    <form class="login-form" id="login-form">
+      <div>
+        <div class="login-label">E-mail institucional</div>
+        <input class="login-input" id="login-email" type="email" autocomplete="username" placeholder="professor@eduia.com" required>
+      </div>
+      <div>
+        <div class="login-label">Senha</div>
+        <input class="login-input" id="login-password" type="password" autocomplete="current-password" placeholder="123456" required>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button class="login-submit" type="submit">Entrar no dashboard</button>
+    </form>
+    <div class="demo-credentials">
+      <strong style="color:var(--text);font-weight:600;">Usuários demo</strong><br>
+      professor@eduia.com / 123456<br>
+      coordenador@eduia.com / 123456
+    </div>
+  </div>
+  <div class="login-visual">
+    <div class="login-preview">
+      <div class="prototype-note">Protótipo acadêmico com dados simulados. Não use dados reais de estudantes nesta versão sem backend e autenticação real.</div>
+      <div class="login-preview-grid">
+        <div class="preview-card"><div class="preview-label">Alunos monitorados</div><div class="preview-value" style="color:var(--green)">90</div></div>
+        <div class="preview-card"><div class="preview-label">Risco alto</div><div class="preview-value" style="color:var(--red)">19</div></div>
+        <div class="preview-card"><div class="preview-label">Acurácia modelo</div><div class="preview-value" style="color:var(--blue)">87%</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo"><div class="logo-mark">EduIA</div><div class="logo-sub">Monitor de Aprendizagem</div></div>
+  <nav class="nav">
+    <div class="nav-label">Visao geral</div>
+    <div class="nav-item active" id="nav-dashboard" onclick="goTo('dashboard',this)"><span class="nav-dot"></span>Dashboard</div>
+    <div class="nav-item" id="nav-alunos" onclick="goTo('alunos',this)"><span class="nav-dot"></span>Alunos</div>
+    <div class="nav-item" id="nav-intervencoes" onclick="goTo('intervencoes',this)"><span class="nav-dot"></span>Intervenções</div>
+    <div class="nav-label">Analise</div>
+    <div class="nav-item" id="nav-relatorios" onclick="goTo('relatorios',this)"><span class="nav-dot"></span>Relatórios</div>
+    <div class="nav-item" id="nav-modelo" onclick="goTo('modelo',this)"><span class="nav-dot"></span>Modelo de IA</div>
+    <div class="nav-label">Escola</div>
+    <div class="nav-item" id="nav-turmas" onclick="goTo('turmas',this)"><span class="nav-dot"></span>Turmas</div>
+    <div class="nav-item" id="nav-config" onclick="goTo('config',this)"><span class="nav-dot"></span>Configurações</div>
+  </nav>
+  <div class="sidebar-footer">Modelo: Random Forest<br>Atualizado: abr. 2025<br>Acurácia: <span style="color:var(--green);font-family:var(--mono)">87.3%</span><br><span style="color:var(--blue);">Dados simulados para TCC</span></div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div><div class="page-title" id="topbar-title">Monitoramento de Turmas</div><div class="breadcrumb" id="topbar-sub">Escola Estadual · São Luís, MA</div></div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="turma-pills" id="turma-pills">
+        <button class="pill active" onclick="setTurma('7A',this)">7 A</button>
+        <button class="pill" onclick="setTurma('8B',this)">8 B</button>
+        <button class="pill" onclick="setTurma('9C',this)">9 C</button>
+      </div>
+      <div class="school-badge"><b>E.E. Dom Bosco</b></div>
+      <div class="user-chip" id="user-chip">Professor demo</div>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="screen-dashboard" class="screen active">
+      <div class="metrics" id="metrics"></div>
+      <div class="row row-3" style="margin-bottom:14px;">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Alunos por risco</span><span class="panel-hint">Clique para detalhar</span></div>
+          <div class="panel-body" style="padding:0;">
+            <table class="data-table">
+              <thead><tr><th style="padding-left:18px;">Aluno</th><th>Risco</th><th>Probabilidade</th><th>Freq.</th><th>Mat.</th><th>Port.</th></tr></thead>
+              <tbody id="aluno-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="detail-panel" id="detail-panel"><div class="detail-empty"><span class="icon">&#8592;</span>Selecione um aluno<br>para ver o diagnóstico<br>e a intervenção sugerida</div></div>
+      </div>
+      <div class="row row-2">
+        <div class="panel"><div class="panel-header"><span class="panel-title">Distribuicao de risco</span><span class="panel-hint" id="dist-label"></span></div><div class="panel-body"><div class="chart-wrap"><canvas id="chartDist"></canvas></div></div></div>
+        <div class="panel"><div class="panel-header"><span class="panel-title">Desempenho da turma</span><span class="panel-hint">Mat. vs Port.</span></div><div class="panel-body"><div class="chart-wrap"><canvas id="chartPerf"></canvas></div></div></div>
+      </div>
+      <div class="row" style="grid-template-columns:1fr 2fr;">
+        <div class="panel"><div class="panel-header"><span class="panel-title">Metricas do modelo</span></div><div class="panel-body">
+          <div class="model-row"><span class="model-key">Algoritmo</span><span class="model-val" style="color:var(--green)">Random Forest</span></div>
+          <div class="model-row"><span class="model-key">Acurácia</span><span class="model-val">87.3%</span></div>
+          <div class="model-row"><span class="model-key">F1-Score</span><span class="model-val">84.9%</span></div>
+          <div class="model-row"><span class="model-key">AUC-ROC</span><span class="model-val">0.921</span></div>
+          <div class="model-row"><span class="model-key">Amostras</span><span class="model-val">2.000</span></div>
+        </div></div>
+        <div class="panel"><div class="panel-header"><span class="panel-title">Importancia das variaveis — SHAP global</span></div><div class="panel-body" id="global-shap"></div></div>
+      </div>
+    </div>
+
+    <!-- ALUNOS -->
+    <div id="screen-alunos" class="screen">
+      <div class="search-bar">
+        <input class="search-input" type="text" id="search-input" placeholder="Buscar aluno pelo nome..." oninput="filtrarAlunos(this.value)">
+        <button class="filter-btn active" onclick="setFiltro('todos',this)">Todos</button>
+        <button class="filter-btn" onclick="setFiltro('alto',this)">Risco alto</button>
+        <button class="filter-btn" onclick="setFiltro('medio',this)">Risco medio</button>
+        <button class="filter-btn" onclick="setFiltro('baixo',this)">Sem risco</button>
+      </div>
+      <div id="alunos-list"></div>
+    </div>
+
+    <!-- INTERVENCOES -->
+    <div id="screen-intervencoes" class="screen">
+      <div class="int-summary">
+        <div class="int-sum-card"><div class="int-sum-val" style="color:var(--amber)" id="int-total">0</div><div class="int-sum-label">Intervenções ativas</div></div>
+        <div class="int-sum-card"><div class="int-sum-val" style="color:var(--red)" id="int-pendentes">0</div><div class="int-sum-label">Pendentes</div></div>
+        <div class="int-sum-card"><div class="int-sum-val" style="color:var(--green)" id="int-concluidas">0</div><div class="int-sum-label">Concluídas</div></div>
+      </div>
+      <div id="intervencoes-list"></div>
+    </div>
+
+    <!-- RELATORIOS -->
+    <div id="screen-relatorios" class="screen">
+      <div id="relatorios-content"></div>
+    </div>
+
+    <!-- MODELO -->
+    <div id="screen-modelo" class="screen">
+      <div id="modelo-content"></div>
+    </div>
+
+    <!-- TURMAS -->
+    <div id="screen-turmas" class="screen">
+      <div id="turmas-content"></div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="screen-config" class="screen">
+      <div id="config-content"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="fecharModal(event)">
+  <div class="modal" id="modal-box">
+    <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══ DADOS ══════════════════════════════════════════════════════════════════
+const TURMAS = {
+  '7A': { total:32, alto:8, medio:13, baixo:11,
+    alunos: [
+      { id:'7A-1', nome:'Lucas Mendes',   init:'LM', cor:'#ff4d6d', bg:'rgba(255,77,109,.15)', risco:'alto',  prob:91, freq:61, mat:32, port:28, rep:2, shap:[42,31,15,12], int:'Contato imediato com a familia sobre a frequencia. Reforco urgente em matematica 3x/semana. Acionar assistente social da escola.', status:'pendente',  prog:10, hist:[] },
+      { id:'7A-2', nome:'Beatriz Santos', init:'BS', cor:'#ff4d6d', bg:'rgba(255,77,109,.15)', risco:'alto',  prob:88, freq:65, mat:29, port:33, rep:1, shap:[38,34,17,11], int:'Verificar situacao domiciliar. Inserir em programa de tutoria. Reforco em matematica.', status:'andamento', prog:40, hist:['Reuniao com mae realizada em 10/04','Matriculado no grupo de reforco em 14/04'] },
+      { id:'7A-3', nome:'Ana Paula',      init:'AP', cor:'#ff4d6d', bg:'rgba(255,77,109,.15)', risco:'alto',  prob:84, freq:70, mat:41, port:35, rep:1, shap:[30,38,20,12], int:'Reforco em portugues e matematica 2x/semana. Avaliacao com pedagogo.', status:'andamento', prog:60, hist:['Avaliacao pedagogica agendada','Reforco iniciado em 08/04'] },
+      { id:'7A-4', nome:'Carlos Rocha',   init:'CR', cor:'#f5a623', bg:'rgba(245,166,35,.15)', risco:'medio', prob:67, freq:78, mat:55, port:60, rep:0, shap:[25,32,28,15], int:'Acompanhamento bimestral. Atividades complementares para casa.', status:'pendente',  prog:0,  hist:[] },
+      { id:'7A-5', nome:'Felipe Torres',  init:'FT', cor:'#f5a623', bg:'rgba(245,166,35,.15)', risco:'medio', prob:58, freq:82, mat:62, port:57, rep:0, shap:[20,35,28,17], int:'Monitorar desempenho em matematica. Exercicios complementares semanais.', status:'andamento', prog:30, hist:['Lista de exercicios enviada em 12/04'] },
+      { id:'7A-6', nome:'Camila Nunes',   init:'CN', cor:'#2dd4a0', bg:'rgba(45,212,160,.15)', risco:'baixo', prob:18, freq:94, mat:78, port:74, rep:0, shap:[10,45,28,17], int:'Sem intervencao necessaria. Monitoramento regular bimestral.', status:'concluida', prog:100, hist:['Avaliacao concluida — sem risco identificado'] },
+      { id:'7A-7', nome:'Rafael Lima',    init:'RL', cor:'#2dd4a0', bg:'rgba(45,212,160,.15)', risco:'baixo', prob:12, freq:96, mat:82, port:80, rep:0, shap:[ 8,48,26,18], int:'Desempenho satisfatorio. Atividades de aprofundamento sugeridas.', status:'concluida', prog:100, hist:['Avaliacao concluida — desempenho excelente'] },
+    ],
+    shap:[{l:'Frequencia escolar',v:38,c:'var(--red)'},{l:'Nota matematica',v:31,c:'var(--amber)'},{l:'Nota portugues',v:18,c:'var(--blue)'},{l:'Reprovacoes ant.',v:13,c:'var(--muted)'}]
+  },
+  '8B': { total:28, alto:5, medio:11, baixo:12,
+    alunos: [
+      { id:'8B-1', nome:'Mariana Lopes',  init:'ML', cor:'#ff4d6d', bg:'rgba(255,77,109,.15)', risco:'alto',  prob:79, freq:68, mat:38, port:42, rep:1, shap:[40,29,18,13], int:'Contato com familia. Reforco em matematica e leitura 2x/semana.', status:'pendente',  prog:5,   hist:[] },
+      { id:'8B-2', nome:'Thiago Barbosa', init:'TB', cor:'#ff4d6d', bg:'rgba(255,77,109,.15)', risco:'alto',  prob:75, freq:72, mat:31, port:36, rep:2, shap:[35,36,18,11], int:'Inserir em grupo de reforco. Reuniao com familia e pedagogo.', status:'andamento', prog:45,  hist:['Reuniao realizada em 11/04','Reforco iniciado'] },
+      { id:'8B-3', nome:'Diego Ferreira', init:'DF', cor:'#f5a623', bg:'rgba(245,166,35,.15)', risco:'medio', prob:63, freq:80, mat:52, port:55, rep:0, shap:[28,32,24,16], int:'Monitoramento mensal. Material de apoio para casa.', status:'andamento', prog:50,  hist:['Material enviado em 09/04'] },
+      { id:'8B-4', nome:'Sofia Alves',    init:'SA', cor:'#f5a623', bg:'rgba(245,166,35,.15)', risco:'medio', prob:55, freq:83, mat:58, port:61, rep:0, shap:[22,34,26,18], int:'Acompanhar evolucao bimestral.', status:'pendente',  prog:0,   hist:[] },
+      { id:'8B-5', nome:'Gabriela Costa', init:'GC', cor:'#2dd4a0', bg:'rgba(45,212,160,.15)', risco:'baixo', prob:20, freq:92, mat:75, port:77, rep:0, shap:[10,44,28,18], int:'Desempenho satisfatorio.', status:'concluida', prog:100, hist:['Avaliacao concluida'] },
+    ],
+    shap:[{l:'Frequencia escolar',v:42,c:'var(--red)'},{l:'Nota matematica',v:28,c:'var(--amber)'},{l:'Nota portugues',v:20,c:'var(--blue)'},{l:'Reprovacoes ant.',v:10,c:'var(--muted)'}]
+  },
+  '9C': { total:30, alto:6, medio:10, baixo:14,
+    alunos: [
+      { id:'9C-1', nome:'Renata Oliveira', init:'RO', cor:'#ff4d6d', bg:'rgba(255,77,109,.15)', risco:'alto',  prob:93, freq:59, mat:27, port:30, rep:2, shap:[44,32,14,10], int:'URGENTE: Acionar assistencia social e pedagogo. Contato com familia hoje.', status:'pendente',  prog:0,   hist:[] },
+      { id:'9C-2', nome:'Eduardo Klein',   init:'EK', cor:'#ff4d6d', bg:'rgba(255,77,109,.15)', risco:'alto',  prob:86, freq:66, mat:35, port:31, rep:1, shap:[38,35,16,11], int:'Reforco em matematica e portugues. Contato com familia.', status:'andamento', prog:25,  hist:['Contato com responsavel realizado em 15/04'] },
+      { id:'9C-3', nome:'Bruno Viana',     init:'BV', cor:'#f5a623', bg:'rgba(245,166,35,.15)', risco:'medio', prob:64, freq:77, mat:52, port:58, rep:0, shap:[26,33,25,16], int:'Monitoramento quinzenal. Reforco em matematica.', status:'andamento', prog:55,  hist:['Reforco iniciado em 07/04','1a avaliacao realizada'] },
+      { id:'9C-4', nome:'Leticia Neves',   init:'LN', cor:'#f5a623', bg:'rgba(245,166,35,.15)', risco:'medio', prob:57, freq:80, mat:58, port:54, rep:0, shap:[22,35,26,17], int:'Acompanhar. Material extra de portugues.', status:'pendente',  prog:0,   hist:[] },
+      { id:'9C-5', nome:'Camila Zanetti',  init:'CZ', cor:'#2dd4a0', bg:'rgba(45,212,160,.15)', risco:'baixo', prob:15, freq:95, mat:80, port:76, rep:0, shap:[ 8,46,28,18], int:'Desempenho excelente. Sem intervencao necessaria.', status:'concluida', prog:100, hist:['Avaliacao concluida — excelente desempenho'] },
+    ],
+    shap:[{l:'Frequencia escolar',v:35,c:'var(--red)'},{l:'Nota matematica',v:33,c:'var(--amber)'},{l:'Nota portugues',v:22,c:'var(--blue)'},{l:'Reprovacoes ant.',v:10,c:'var(--muted)'}]
+  }
+};
+
+// Config state
+const CFG = { alertas: true, relatorioAuto: false, ciclo: 14, notifEmail: true };
+
+let CT='7A', SEL=null, CD=null, CP=null, FA='todos', EXP=null;
+
+const DEMO_USERS = [
+  { email:'professor@eduia.com', senha:'123456', nome:'Prof. Ana Souza', perfil:'Professor' },
+  { email:'coordenador@eduia.com', senha:'123456', nome:'Coord. Marcos Lima', perfil:'Coordenação' }
+];
+const SESSION_KEY = 'eduia_session';
+const INTERVENTION_KEY = 'eduia_intervencoes';
+
+function initAuth() {
+  const form = document.getElementById('login-form');
+  if(form) form.addEventListener('submit', handleLogin);
+  const session = getSession();
+  if(session) unlockApp(session);
+  else lockApp();
+}
+
+function getSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
+  catch(e) { return null; }
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const senha = document.getElementById('login-password').value;
+  const user = DEMO_USERS.find(u=>u.email===email && u.senha===senha);
+  const error = document.getElementById('login-error');
+  if(!user) {
+    error.textContent = 'E-mail ou senha inválidos para o acesso demonstrativo.';
+    return;
+  }
+  const session = { email:user.email, nome:user.nome, perfil:user.perfil, loginAt:new Date().toISOString() };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  error.textContent = '';
+  unlockApp(session);
+  toast('Bem-vindo(a), '+user.nome+'!', 'success');
+}
+
+function lockApp() {
+  document.body.classList.add('auth-locked');
+}
+
+function unlockApp(session) {
+  document.body.classList.remove('auth-locked');
+  const chip = document.getElementById('user-chip');
+  if(chip) chip.textContent = `${session.nome} · ${session.perfil}`;
+}
+
+function logout() {
+  localStorage.removeItem(SESSION_KEY);
+  lockApp();
+  closeModal();
+  const form = document.getElementById('login-form');
+  if(form) form.reset();
+}
+
+function applyInterventionState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(INTERVENTION_KEY) || '{}');
+    Object.entries(saved).forEach(([id, patch])=>{
+      Object.values(TURMAS).forEach(t=>{
+        const aluno = t.alunos.find(a=>a.id===id);
+        if(aluno) Object.assign(aluno, patch);
+      });
+    });
+  } catch(e) {}
+}
+
+function saveInterventionState() {
+  const state = {};
+  Object.values(TURMAS).forEach(t=>t.alunos.forEach(a=>{
+    state[a.id] = { status:a.status, prog:a.prog, hist:a.hist };
+  }));
+  try { localStorage.setItem(INTERVENTION_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+// ══ UTILS ══════════════════════════════════════════════════════════════════
+function toast(msg, tipo='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast '+tipo;
+  setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function openModal(title, sub, body, actions) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-sub').textContent = sub;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-actions').innerHTML = actions;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function fecharModal(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
+
+// ══ NAV ════════════════════════════════════════════════════════════════════
+const TITULOS = {
+  dashboard:    ['Monitoramento de Turmas',    'Escola Estadual · São Luís, MA'],
+  alunos:       ['Cadastro de Alunos',          'Busque, filtre e analise individualmente'],
+  intervencoes: ['Plano de Intervenções',       'Acompanhe o andamento de cada ação pedagógica'],
+  relatorios:   ['Relatórios',                  'Exportar e visualizar relatórios por turma'],
+  modelo:       ['Modelo de IA',                'Desempenho e explicabilidade do Random Forest'],
+  turmas:       ['Gestao de Turmas',            'Visao consolidada por turma'],
+  config:       ['Configurações',               'Preferências do sistema EduIA'],
+};
+
+function goTo(scr, el) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('screen-'+scr).classList.add('active');
+  if(el) el.classList.add('active');
+  const [title, sub] = TITULOS[scr];
+  document.getElementById('topbar-title').textContent = title;
+  document.getElementById('topbar-sub').textContent = sub;
+  document.getElementById('turma-pills').style.display = scr==='dashboard' ? 'flex' : 'none';
+  if(scr==='alunos')       renderAlunos();
+  if(scr==='intervencoes') renderIntervencoes();
+  if(scr==='relatorios')   renderRelatorios();
+  if(scr==='modelo')       renderModelo();
+  if(scr==='turmas')       renderTurmas();
+  if(scr==='config')       renderConfig();
+}
+
+function setTurma(id, btn) {
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active'); CT=id; SEL=null; render();
+}
+
+// ══ DASHBOARD ══════════════════════════════════════════════════════════════
+function render() {
+  const d = TURMAS[CT];
+  renderMetrics(d); renderTabela(d); renderDetail(null); renderCharts(d); renderGlobalShap(d);
+  document.getElementById('dist-label').textContent = d.total+' alunos';
+}
+
+function renderMetrics(d) {
+  const items = [
+    { label:'Total alunos', val:d.total, sub:'na turma', color:'var(--green)', badge:null, click:null },
+    { label:'Risco alto',   val:d.alto,  sub:Math.round(d.alto/d.total*100)+'% da turma',  color:'var(--red)',   badge:'Ação imediata', click:'alto' },
+    { label:'Risco medio',  val:d.medio, sub:Math.round(d.medio/d.total*100)+'% da turma', color:'var(--amber)', badge:'Monitorar',     click:'medio' },
+    { label:'Sem risco',    val:d.baixo, sub:Math.round(d.baixo/d.total*100)+'% da turma', color:'var(--blue)',  badge:null,           click:'baixo' },
+  ];
+  document.getElementById('metrics').innerHTML = items.map(m=>`
+    <div class="metric-card" style="--accent:${m.color}" ${m.click?`onclick="irParaAlunos('${m.click}')" title="Ver alunos com risco ${m.click}"`:''}> 
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-val" style="color:${m.color}">${m.val}</div>
+      <div class="metric-sub">${m.sub}</div>
+      ${m.badge?`<div class="metric-badge" style="background:${m.color}22;color:${m.color}">${m.badge}</div>`:''}
+    </div>`).join('');
+}
+
+function irParaAlunos(filtro) {
+  FA = filtro;
+  goTo('alunos', document.getElementById('nav-alunos'));
+}
+
+function renderTabela(d) {
+  document.getElementById('aluno-tbody').innerHTML = d.alunos.map(a=>`
+    <tr id="row-${a.id}" onclick="selAluno('${a.id}')" class="${SEL===a.id?'selected':''}">
+      <td style="padding-left:18px;"><div class="name-cell"><div class="avatar" style="background:${a.bg};color:${a.cor}">${a.init}</div><span>${a.nome}</span></div></td>
+      <td><span class="risk-badge r-${a.risco}">${a.risco}</span></td>
+      <td><div class="prob-bar-wrap"><div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${a.prob}%;background:${a.cor}"></div></div><span class="prob-val">${a.prob}%</span></div></td>
+      <td style="font-family:var(--mono);font-size:12px;color:${a.freq<75?'var(--red)':a.freq<85?'var(--amber)':'var(--green)'}">${a.freq}%</td>
+      <td style="font-family:var(--mono);font-size:12px;color:${a.mat<50?'var(--red)':a.mat<65?'var(--amber)':'var(--green)'}">${a.mat}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:${a.port<50?'var(--red)':a.port<65?'var(--amber)':'var(--green)'}">${a.port}</td>
+    </tr>`).join('');
+}
+
+function selAluno(id) {
+  SEL = id; renderTabela(TURMAS[CT]);
+  const a = TURMAS[CT].alunos.find(x=>x.id===id);
+  renderDetail(a);
+}
+
+function renderDetail(a) {
+  const p = document.getElementById('detail-panel');
+  if(!a){ p.innerHTML='<div class="detail-empty"><span class="icon">&#8592;</span>Selecione um aluno<br>para ver o diagnóstico<br>e a intervenção sugerida</div>'; return; }
+  const SL=['Frequência','Nota mat.','Nota port.','Reprovações'], SC=['var(--red)','var(--amber)','var(--blue)','var(--muted)'];
+  p.innerHTML = `
+    <div class="panel-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar" style="background:${a.bg};color:${a.cor};width:34px;height:34px;font-size:12px;">${a.init}</div>
+        <div><div style="font-weight:600;font-size:13px;">${a.nome}</div><span class="risk-badge r-${a.risco}" style="font-size:10px;">${a.risco} ${a.prob}%</span></div>
+      </div>
+      <button class="btn-int" onclick="verIntervencaoAluno('${a.id}')" style="font-size:11px;">Ver intervenção</button>
+    </div>
+    <div class="panel-body">
+      <div class="mini-metrics">
+        <div class="mini-card"><div class="mini-label">Frequência</div><div class="mini-val" style="color:${a.freq<75?'var(--red)':a.freq<85?'var(--amber)':'var(--green)'}">${a.freq}%</div></div>
+        <div class="mini-card"><div class="mini-label">Matemática</div><div class="mini-val" style="color:${a.mat<50?'var(--red)':a.mat<65?'var(--amber)':'var(--green)'}">${a.mat}</div></div>
+        <div class="mini-card"><div class="mini-label">Português</div><div class="mini-val" style="color:${a.port<50?'var(--red)':a.port<65?'var(--amber)':'var(--green)'}">${a.port}</div></div>
+      </div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px;">Fatores SHAP — por que este risco?</div>
+      ${a.shap.map((v,i)=>`<div class="shap-row"><span class="shap-label">${SL[i]}</span><div class="shap-track"><div class="shap-fill" style="width:${v}%;background:${SC[i]}"></div></div><span class="shap-pct">${v}%</span></div>`).join('')}
+      <div class="int-box"><strong>Intervenção sugerida</strong>${a.int}</div>
+    </div>`;
+}
+
+function verIntervencaoAluno(id) {
+  goTo('intervencoes', document.getElementById('nav-intervencoes'));
+}
+
+function renderCharts(d) {
+  if(!window.Chart) {
+    document.querySelectorAll('.chart-wrap').forEach(w=>{
+      w.innerHTML = '<div class="chart-fallback">Não foi possível carregar os gráficos. Verifique a conexão com a internet para baixar o Chart.js.</div>';
+    });
+    return;
+  }
+  if(CD) CD.destroy(); if(CP) CP.destroy();
+  const base = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:'#7a7f94', font:{ family:"'DM Sans'" }, boxWidth:10, padding:12 } } } };
+  CD = new Chart(document.getElementById('chartDist').getContext('2d'), {
+    type:'doughnut',
+    data:{ labels:['Risco alto','Risco medio','Sem risco'], datasets:[{ data:[d.alto,d.medio,d.baixo], backgroundColor:['rgba(255,77,109,.8)','rgba(245,166,35,.8)','rgba(45,212,160,.8)'], borderColor:'#171b26', borderWidth:3, hoverOffset:6 }] },
+    options:{ ...base, cutout:'68%' }
+  });
+  CP = new Chart(document.getElementById('chartPerf').getContext('2d'), {
+    type:'bar',
+    data:{ labels:d.alunos.map(a=>a.nome.split(' ')[0]), datasets:[
+      { label:'Matemática', data:d.alunos.map(a=>a.mat),  backgroundColor:'rgba(79,142,247,.7)', borderRadius:4 },
+      { label:'Português',  data:d.alunos.map(a=>a.port), backgroundColor:'rgba(45,212,160,.5)', borderRadius:4 },
+    ]},
+    options:{ ...base, scales:{ x:{ ticks:{ color:'#7a7f94', font:{ family:"'DM Sans'", size:11 } }, grid:{ color:'rgba(255,255,255,.04)' } }, y:{ ticks:{ color:'#7a7f94' }, grid:{ color:'rgba(255,255,255,.04)' }, max:100 } } }
+  });
+}
+
+function renderGlobalShap(d) {
+  document.getElementById('global-shap').innerHTML = d.shap.map(s=>`
+    <div class="shap-row" style="margin-bottom:10px;">
+      <span class="shap-label" style="width:160px;">${s.l}</span>
+      <div class="shap-track" style="height:8px;"><div class="shap-fill" style="height:8px;width:${s.v}%;background:${s.c}"></div></div>
+      <span class="shap-pct">${s.v}%</span>
+    </div>`).join('');
+}
+
+// ══ ALUNOS ═════════════════════════════════════════════════════════════════
+function renderAlunos(filtro='') {
+  const fi = document.getElementById('search-input');
+  const termo = filtro || (fi ? fi.value : '');
+  const todos = Object.entries(TURMAS).flatMap(([tk,t])=>t.alunos.map(a=>({...a,turma:tk})));
+  const lista = todos.filter(a=>{
+    return a.nome.toLowerCase().includes(termo.toLowerCase()) && (FA==='todos' || a.risco===FA);
+  }).sort((a,b)=>b.prob-a.prob);
+
+  const SL=['Frequência','Nota mat.','Nota port.','Reprovações'], SC=['var(--red)','var(--amber)','var(--blue)','var(--muted)'];
+
+  // Sync active filter button
+  document.querySelectorAll('.filter-btn').forEach(b=>{
+    b.classList.toggle('active', b.textContent.toLowerCase().includes(FA==='todos'?'todos':FA==='alto'?'alto':FA==='medio'?'medio':'risco'===FA?'risco':'sem'));
+  });
+
+  document.getElementById('alunos-list').innerHTML = lista.length===0
+    ? '<div style="text-align:center;color:var(--muted);padding:40px;font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:12px;">Nenhum aluno encontrado com os filtros atuais. Ajuste a busca ou selecione outro nível de risco.</div>'
+    : lista.map(a=>{
+        const key = a.id;
+        const isExp = EXP === key;
+        const cp = a.prog===100?'var(--green)':a.prog>0?'var(--blue)':'var(--surface2)';
+        return `
+        <div class="aluno-card ${isExp?'expanded':''}" onclick="toggleAluno('${key}')">
+          <div class="ac-header">
+            <div class="avatar" style="background:${a.bg};color:${a.cor};width:36px;height:36px;">${a.init}</div>
+            <div><div class="ac-name">${a.nome}</div><div class="ac-sub">Turma ${a.turma} &middot; ${a.rep} reprovação(ões)</div></div>
+            <div class="ac-stat"><div class="ac-stat-val" style="color:${a.freq<75?'var(--red)':a.freq<85?'var(--amber)':'var(--green)'}">${a.freq}%</div><div class="ac-stat-label">Frequência</div></div>
+            <div class="ac-stat"><div class="ac-stat-val" style="color:${a.mat<50?'var(--red)':a.mat<65?'var(--amber)':'var(--green)'}">${a.mat}</div><div class="ac-stat-label">Matemática</div></div>
+            <div class="ac-stat"><div class="ac-stat-val" style="color:${a.port<50?'var(--red)':a.port<65?'var(--amber)':'var(--green)'}">${a.port}</div><div class="ac-stat-label">Português</div></div>
+            <span class="risk-badge r-${a.risco}">${a.risco} ${a.prob}%</span>
+            <span class="ac-arrow ${isExp?'open':''}">&#9660;</span>
+          </div>
+          <div class="ac-detail ${isExp?'open':''}">
+            <div>
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;">Fatores SHAP</div>
+              ${a.shap.map((v,i)=>`<div class="shap-row"><span class="shap-label">${SL[i]}</span><div class="shap-track"><div class="shap-fill" style="width:${v}%;background:${SC[i]}"></div></div><span class="shap-pct">${v}%</span></div>`).join('')}
+            </div>
+            <div>
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;">Intervenção sugerida</div>
+              <div class="int-box" style="margin-top:0;">${a.int}</div>
+              <div style="margin-top:12px;">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px;"><span>Progresso da intervenção</span><span>${a.prog}%</span></div>
+                <div class="progress-bg"><div class="progress-fill" style="width:${a.prog}%;background:${cp}"></div></div>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;">
+                <button class="btn-int primary" onclick="event.stopPropagation();modalHistorico('${a.id}','${a.turma}')">Ver histórico</button>
+                <button class="btn-int warn" onclick="event.stopPropagation();modalNotificar('${a.id}','${a.turma}')">Notificar família</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+}
+
+function toggleAluno(key) { EXP = EXP===key ? null : key; renderAlunos(); }
+function filtrarAlunos(v) { renderAlunos(v); }
+function setFiltro(r, btn) {
+  FA = r;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAlunos();
+}
+
+// ══ INTERVENCOES ═══════════════════════════════════════════════════════════
+function renderIntervencoes() {
+  const todos = Object.entries(TURMAS).flatMap(([tk,t])=>t.alunos.map(a=>({...a,turma:tk})));
+  document.getElementById('int-total').textContent    = todos.filter(a=>a.status!=='concluida').length;
+  document.getElementById('int-pendentes').textContent = todos.filter(a=>a.status==='pendente').length;
+  document.getElementById('int-concluidas').textContent= todos.filter(a=>a.status==='concluida').length;
+
+  const ord = {pendente:0, andamento:1, concluida:2};
+  const sorted = [...todos].sort((a,b)=>ord[a.status]-ord[b.status]||b.prob-a.prob);
+
+  const grupos = [
+    { titulo:'Ação imediata necessária', cor:'var(--red)',   lista: sorted.filter(a=>a.risco==='alto'&&a.status!=='concluida') },
+    { titulo:'Monitoramento ativo',      cor:'var(--amber)', lista: sorted.filter(a=>a.risco==='medio') },
+    { titulo:'Concluídas / sem risco',   cor:'var(--green)', lista: sorted.filter(a=>a.risco==='baixo'||a.status==='concluida') },
+  ];
+
+  document.getElementById('intervencoes-list').innerHTML = grupos
+    .filter(g=>g.lista.length>0)
+    .map(g=>`<div class="section-label" style="color:${g.cor}">${g.titulo}</div>${g.lista.map(a=>cardInt(a)).join('')}`)
+    .join('');
+}
+
+function cardInt(a) {
+  const SL = {pendente:'Pendente', andamento:'Em andamento', concluida:'Concluida'};
+  const cp = a.prog===100?'var(--green)':a.prog>0?'var(--blue)':'var(--surface2)';
+  const concluida = a.status==='concluida';
+  return `
+  <div class="int-card">
+    <div class="int-card-header">
+      <div class="int-aluno">
+        <div class="avatar" style="background:${a.bg};color:${a.cor};width:34px;height:34px;">${a.init}</div>
+        <div>
+          <div class="int-nome">${a.nome}</div>
+          <div class="int-sub">Turma ${a.turma} &middot; <span class="risk-badge r-${a.risco}" style="font-size:10px;padding:1px 7px;">${a.risco}</span></div>
+        </div>
+      </div>
+      <span class="status-badge s-${a.status}">${SL[a.status]}</span>
+    </div>
+    <div class="int-texto">${a.int}</div>
+    <div class="progress-wrap">
+      <div class="progress-top"><span>Progresso</span><span>${a.prog}%</span></div>
+      <div class="progress-bg"><div class="progress-fill" style="width:${a.prog}%;background:${cp}"></div></div>
+    </div>
+    <div class="int-meta">
+      <div class="int-meta-item">Frequência: <b style="color:${a.freq<75?'var(--red)':a.freq<85?'var(--amber)':'var(--green)'}">${a.freq}%</b></div>
+      <div class="int-meta-item">Matemática: <b style="color:${a.mat<50?'var(--red)':a.mat<65?'var(--amber)':'var(--green)'}">${a.mat}</b></div>
+      <div class="int-meta-item">Português: <b style="color:${a.port<50?'var(--red)':a.port<65?'var(--amber)':'var(--green)'}">${a.port}</b></div>
+      <div class="int-meta-item">Prob. risco: <b style="color:${a.cor}">${a.prob}%</b></div>
+    </div>
+    <div class="int-actions">
+      ${!concluida ? `<button class="btn-int primary" onclick="avancarStatus('${a.id}','${a.turma}',event)">Atualizar progresso</button>` : '<button class="btn-int concluido" disabled>Concluida</button>'}
+      <button class="btn-int" onclick="modalHistorico('${a.id}','${a.turma}',event)">Ver histórico</button>
+      <button class="btn-int warn" onclick="modalNotificar('${a.id}','${a.turma}',event)">Notificar família</button>
+      ${!concluida ? `<button class="btn-int" onclick="modalRegistrar('${a.id}','${a.turma}',event)">Registrar observação</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function avancarStatus(id, turma, e) {
+  if(e) e.stopPropagation();
+  const a = TURMAS[turma].alunos.find(al=>al.id===id);
+  if(!a || a.status==='concluida') return;
+  const passos = {pendente:{status:'andamento',prog:25,msg:'Intervenção iniciada!'}, andamento:{prog:null,msg:'Progresso atualizado!'}};
+  if(a.status==='pendente') { a.status='andamento'; a.prog=25; a.hist.push('Intervenção iniciada em '+hojeStr()); }
+  else { a.prog = Math.min(100, a.prog+25); if(a.prog===100){ a.status='concluida'; a.hist.push('Intervenção concluída em '+hojeStr()); } else { a.hist.push('Progresso atualizado para '+a.prog+'% em '+hojeStr()); } }
+  saveInterventionState();
+  toast('Progresso atualizado para '+a.prog+'%', a.prog===100?'success':'info');
+  renderIntervencoes();
+}
+
+function hojeStr() {
+  const d = new Date();
+  return d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear();
+}
+
+function getAluno(id, turma) {
+  return TURMAS[turma]?.alunos.find(a=>a.id===id);
+}
+
+function modalHistorico(id, turma, e) {
+  if(e) e.stopPropagation();
+  const a = getAluno(id, turma);
+  if(!a) return;
+  const cores = {pendente:'var(--amber)',andamento:'var(--blue)',concluida:'var(--green)'};
+  const histHtml = a.hist.length===0
+    ? '<div style="color:var(--muted);font-size:12px;">Nenhuma atividade registrada ainda.</div>'
+    : a.hist.map((h,i)=>`<div class="hist-item"><div class="hist-dot" style="background:var(--green)"></div><div><div class="hist-text">${h}</div></div></div>`).join('');
+  openModal(
+    'Histórico de intervenção',
+    a.nome+' · Turma '+turma,
+    `<div style="max-height:240px;overflow-y:auto;">${histHtml}</div>`,
+    `<button class="modal-btn cancel" onclick="closeModal()">Fechar</button>`
+  );
+}
+
+function modalNotificar(id, turma, e) {
+  if(e) e.stopPropagation();
+  const a = getAluno(id, turma);
+  if(!a) return;
+  openModal(
+    'Notificar família',
+    'Enviar mensagem sobre '+a.nome,
+    `<div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Selecione o tipo de notificacao:</div>
+     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="radio" name="tipo" value="frequencia" checked> Alerta de frequencia escolar</label>
+       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="radio" name="tipo" value="desempenho"> Alerta de desempenho acadêmico</label>
+       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="radio" name="tipo" value="reuniao"> Convocação para reunião</label>
+     </div>
+     <textarea class="modal-textarea" id="msg-textarea" placeholder="Mensagem adicional para a família (opcional)..."></textarea>`,
+    `<button class="modal-btn cancel" onclick="closeModal()">Cancelar</button>
+     <button class="modal-btn warn" onclick="confirmarNotificacao('${id}','${turma}')">Enviar notificação</button>`
+  );
+}
+
+function confirmarNotificacao(id, turma) {
+  const a = getAluno(id, turma);
+  const tipo = document.querySelector('input[name="tipo"]:checked')?.value || 'geral';
+  a.hist.push('Familia notificada ('+tipo+') em '+hojeStr());
+  saveInterventionState();
+  closeModal();
+  toast('Notificação enviada para a família de '+a.nome+'!', 'success');
+  renderIntervencoes();
+}
+
+function modalRegistrar(id, turma, e) {
+  if(e) e.stopPropagation();
+  const a = getAluno(id, turma);
+  if(!a) return;
+  openModal(
+    'Registrar observação',
+    a.nome+' · Turma '+turma,
+    `<textarea class="modal-textarea" id="obs-textarea" placeholder="Descreva a observação pedagógica..." style="margin-top:0;min-height:100px;"></textarea>`,
+    `<button class="modal-btn cancel" onclick="closeModal()">Cancelar</button>
+     <button class="modal-btn confirm" onclick="salvarObservacao('${id}','${turma}')">Salvar observação</button>`
+  );
+}
+
+function salvarObservacao(id, turma) {
+  const a = getAluno(id, turma);
+  const obs = document.getElementById('obs-textarea')?.value?.trim();
+  if(!obs){ toast('Escreva a observação antes de salvar.','warn'); return; }
+  a.hist.push(obs+' ('+hojeStr()+')');
+  saveInterventionState();
+  closeModal();
+  toast('Observação registrada com sucesso!','success');
+  renderIntervencoes();
+}
+
+// ══ RELATORIOS ═════════════════════════════════════════════════════════════
+function renderRelatorios() {
+  const turmasArr = Object.entries(TURMAS);
+  const totalAlunos   = turmasArr.reduce((s,[,t])=>s+t.total,0);
+  const totalAlto     = turmasArr.reduce((s,[,t])=>s+t.alto,0);
+  const totalConcluidas = turmasArr.reduce((s,[,t])=>s+t.alunos.filter(a=>a.status==='concluida').length,0);
+
+  document.getElementById('relatorios-content').innerHTML = `
+    <!-- Cabecalho e filtros -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span style="font-size:13px;color:var(--muted);">Periodo:</span>
+        <select id="sel-periodo" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-family:var(--sans);font-size:13px;outline:none;">
+          <option>Abril 2025</option><option>Março 2025</option><option>Fevereiro 2025</option><option>Janeiro 2025</option>
+        </select>
+      </div>
+      <button class="btn-int primary" onclick="exportarCSVTodos()" style="padding:8px 16px;font-size:13px;">
+        Exportar todas as turmas
+      </button>
+    </div>
+
+    <!-- Resumo geral -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+      <div class="int-sum-card"><div class="int-sum-val" style="color:var(--blue)">${totalAlunos}</div><div class="int-sum-label">Total monitorados</div></div>
+      <div class="int-sum-card"><div class="int-sum-val" style="color:var(--red)">${totalAlto}</div><div class="int-sum-label">Em risco alto</div></div>
+      <div class="int-sum-card"><div class="int-sum-val" style="color:var(--green)">${totalConcluidas}</div><div class="int-sum-label">Intervenções concluídas</div></div>
+    </div>
+
+    <!-- Cards por turma -->
+    ${turmasArr.map(([tk,t])=>{
+      const alto     = t.alunos.filter(a=>a.risco==='alto').length;
+      const medio    = t.alunos.filter(a=>a.risco==='medio').length;
+      const baixo    = t.alunos.filter(a=>a.risco==='baixo').length;
+      const concl    = t.alunos.filter(a=>a.status==='concluida').length;
+      const pend     = t.alunos.filter(a=>a.status==='pendente').length;
+      const mmat     = Math.round(t.alunos.reduce((s,a)=>s+a.mat,0)/t.alunos.length);
+      const mport    = Math.round(t.alunos.reduce((s,a)=>s+a.port,0)/t.alunos.length);
+      const mfreq    = Math.round(t.alunos.reduce((s,a)=>s+a.freq,0)/t.alunos.length);
+      const pctRisco = Math.round(alto/t.total*100);
+      const pctInt   = Math.round(concl/t.alunos.length*100);
+      return `
+      <div class="relatorio-card" style="margin-bottom:14px;">
+        <!-- Header -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <div style="font-size:15px;font-weight:600;">Turma ${tk}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${t.total} alunos &middot; E.E. Dom Bosco &middot; Abril 2025</div>
+          </div>
+          <span class="risk-badge r-${pctRisco>30?'alto':pctRisco>15?'medio':'baixo'}" style="font-size:11px;">${pctRisco}% risco alto</span>
+        </div>
+
+        <!-- Stats grid -->
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px;">
+          ${[['Risco alto','var(--red)',alto],['Risco medio','var(--amber)',medio],['Sem risco','var(--green)',baixo],['Media Mat.','var(--blue)',mmat],['Media Port.','var(--blue)',mport],['Freq. media','var(--muted)',mfreq+'%']].map(([l,c,v])=>`
+          <div style="text-align:center;background:var(--surface2);border-radius:8px;padding:10px 6px;">
+            <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:${c};">${v}</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;">${l}</div>
+          </div>`).join('')}
+        </div>
+
+        <!-- Barra risco -->
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;"><span>Distribuicao de risco</span></div>
+          <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px;">
+            <div style="width:${Math.round(alto/t.total*100)}%;background:var(--red);border-radius:4px 0 0 4px;" title="Alto: ${alto}"></div>
+            <div style="width:${Math.round(medio/t.total*100)}%;background:var(--amber);" title="Medio: ${medio}"></div>
+            <div style="flex:1;background:var(--green);border-radius:0 4px 4px 0;" title="Baixo: ${baixo}"></div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:5px;">
+            <span style="font-size:10px;color:var(--red);">&#9632; Alto (${alto})</span>
+            <span style="font-size:10px;color:var(--amber);">&#9632; Medio (${medio})</span>
+            <span style="font-size:10px;color:var(--green);">&#9632; Sem risco (${baixo})</span>
+          </div>
+        </div>
+
+        <!-- Barra intervencoes -->
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;"><span>Intervenções concluídas</span><span>${pctInt}%</span></div>
+          <div class="progress-bg"><div class="progress-fill" style="width:${pctInt}%;background:${pctInt>70?'var(--green)':pctInt>30?'var(--blue)':'var(--amber)'}"></div></div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">${concl} concluidas &middot; ${pend} pendentes</div>
+        </div>
+
+        <!-- Acoes -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:12px;">
+          <button class="btn-int primary" onclick="exportarCSV('${tk}')">Baixar CSV</button>
+          <button class="btn-int" onclick="verDetalheRelatorio('${tk}')">Ver alunos</button>
+          <button class="btn-int" onclick="goTo('dashboard',document.getElementById('nav-dashboard'));CT='${tk}';document.querySelectorAll('.pill').forEach((p,i)=>{p.classList.toggle('active',['7A','8B','9C'][i]==='${tk}')});render()">Abrir dashboard</button>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+function csvEscape(value, sep) {
+  const text = String(value ?? '');
+  return /["\n\r]/.test(text) || text.includes(sep) ? `"${text.replace(/"/g,'""')}"` : text;
+}
+
+function csvHeader() {
+  const header = ['Nome','Turma','Risco','Probabilidade (%)','Frequência (%)','Nota Matemática','Nota Português','Reprovações','Status Intervenção','Progresso (%)'];
+  if(CFG.inclHistorico) header.push('Histórico Intervenções');
+  if(CFG.inclShap) header.push('SHAP Frequência','SHAP Matemática','SHAP Português','SHAP Reprovações');
+  return header;
+}
+
+function csvRow(a, turma) {
+  const row = [a.nome, turma, a.risco, a.prob, a.freq, a.mat, a.port, a.rep, a.status, a.prog];
+  if(CFG.inclHistorico) row.push((a.hist || []).join(' | '));
+  if(CFG.inclShap) row.push(...a.shap);
+  return row;
+}
+
+function exportarCSV(turma) {
+  const t = TURMAS[turma];
+  const sep = CFG.sepCSV || ';';
+  const bom = '\uFEFF'; // BOM UTF-8 — corrige acentos no Excel
+  const linhas = [bom+csvHeader().map(v=>csvEscape(v, sep)).join(sep)];
+  t.alunos.forEach(a=>linhas.push(csvRow(a, turma).map(v=>csvEscape(v, sep)).join(sep)));
+  const blob = new Blob([linhas.join('\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `EduIA_Turma_${turma}_${hojeStr().replace(/\//g,'-')}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  toast('CSV da Turma '+turma+' baixado com sucesso!', 'success');
+}
+
+function exportarCSVTodos() {
+  const bom = '\uFEFF';
+  const sep = CFG.sepCSV || ';';
+  const linhas = [bom+csvHeader().map(v=>csvEscape(v, sep)).join(sep)];
+  Object.entries(TURMAS).forEach(([tk,t])=>{
+    t.alunos.forEach(a=>linhas.push(csvRow(a, tk).map(v=>csvEscape(v, sep)).join(sep)));
+  });
+  const blob = new Blob([linhas.join('\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href=url; link.download=`EduIA_Todas_Turmas_${hojeStr().replace(/\//g,'-')}.csv`;
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  toast('CSV de todas as turmas exportado!', 'success');
+}
+
+function verDetalheRelatorio(turma) {
+  const t = TURMAS[turma];
+  const rows = t.alunos
+    .sort((a,b)=>b.prob-a.prob)
+    .map(a=>`
+      <tr>
+        <td style="padding:7px 8px;font-size:12px;">${a.nome}</td>
+        <td style="padding:7px 8px;"><span class="risk-badge r-${a.risco}" style="font-size:10px;">${a.risco}</span></td>
+        <td style="padding:7px 8px;font-family:var(--mono);font-size:12px;">${a.prob}%</td>
+        <td style="padding:7px 8px;font-family:var(--mono);font-size:12px;color:${a.freq<75?'var(--red)':a.freq<85?'var(--amber)':'var(--green)'}">${a.freq}%</td>
+        <td style="padding:7px 8px;font-family:var(--mono);font-size:12px;color:${a.mat<50?'var(--red)':a.mat<65?'var(--amber)':'var(--green)'}">${a.mat}</td>
+        <td style="padding:7px 8px;font-family:var(--mono);font-size:12px;color:${a.port<50?'var(--red)':a.port<65?'var(--amber)':'var(--green)'}">${a.port}</td>
+        <td style="padding:7px 8px;"><span class="status-badge s-${a.status}" style="font-size:10px;padding:2px 8px;">${a.status}</span></td>
+      </tr>`).join('');
+  openModal(
+    'Alunos — Turma '+turma,
+    t.total+' alunos · '+t.alunos.filter(a=>a.risco==='alto').length+' em risco alto',
+    `<div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:480px;">
+        <thead><tr style="border-bottom:1px solid var(--border);">
+          ${['Aluno','Risco','Prob.','Freq.','Mat.','Port.','Status'].map(h=>`<th style="text-align:left;padding:6px 8px;color:var(--muted);font-size:10px;text-transform:uppercase;font-weight:500;">${h}</th>`).join('')}
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`,
+    `<button class="modal-btn cancel" onclick="closeModal()">Fechar</button>
+     <button class="modal-btn confirm" onclick="exportarCSV('${turma}');closeModal()">Baixar CSV</button>`
+  );
+}
+
+// ══ MODELO ═════════════════════════════════════════════════════════════════
+function renderModelo() {
+  document.getElementById('modelo-content').innerHTML = `
+    <div class="modelo-grid">
+      <div class="panel"><div class="panel-header"><span class="panel-title">Comparacao de modelos</span></div>
+        <div class="panel-body">
+          ${[['Random Forest','87.3%','84.9%','0.921','var(--green)',true],['SVM (RBF)','82.1%','80.4%','0.887','var(--muted)',false],['KNN (k=7)','78.6%','76.2%','0.851','var(--muted)',false]].map(([n,a,f,r,c,best])=>`
+          <div style="background:${best?'var(--green-dim)':'var(--surface2)'};border:1px solid ${best?'rgba(45,212,160,.3)':'var(--border)'};border-radius:8px;padding:12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-weight:600;font-size:13px;color:${c}">${n}</span>
+              ${best?'<span style="font-size:10px;background:var(--green);color:#0f1117;padding:2px 8px;border-radius:10px;font-weight:700;">Vencedor</span>':''}
+            </div>
+            <div style="display:flex;gap:16px;">
+              <div><div style="font-size:10px;color:var(--muted);">Acurácia</div><div style="font-family:var(--mono);font-size:14px;font-weight:700;">${a}</div></div>
+              <div><div style="font-size:10px;color:var(--muted);">F1-Score</div><div style="font-family:var(--mono);font-size:14px;font-weight:700;">${f}</div></div>
+              <div><div style="font-size:10px;color:var(--muted);">AUC-ROC</div><div style="font-family:var(--mono);font-size:14px;font-weight:700;">${r}</div></div>
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="panel"><div class="panel-header"><span class="panel-title">Importancia das variaveis (SHAP global)</span></div>
+        <div class="panel-body">
+          ${[{l:'Frequencia escolar',v:38,c:'var(--red)'},{l:'Nota matematica',v:31,c:'var(--amber)'},{l:'Nota portugues',v:18,c:'var(--blue)'},{l:'Reprovacoes ant.',v:13,c:'var(--muted)'}].map(s=>`
+          <div class="shap-row" style="margin-bottom:12px;">
+            <span class="shap-label" style="width:160px;">${s.l}</span>
+            <div class="shap-track" style="height:10px;"><div class="shap-fill" style="height:10px;width:${s.v}%;background:${s.c}"></div></div>
+            <span class="shap-pct">${s.v}%</span>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-header"><span class="panel-title">Matriz de confusao — Random Forest</span><span class="panel-hint">Conjunto de teste (20%)</span></div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:80px repeat(3,1fr);gap:6px;max-width:420px;">
+          <div></div>
+          <div style="text-align:center;font-size:11px;color:var(--muted);padding:6px;">Baixo</div>
+          <div style="text-align:center;font-size:11px;color:var(--muted);padding:6px;">Medio</div>
+          <div style="text-align:center;font-size:11px;color:var(--muted);padding:6px;">Alto</div>
+          ${[['Baixo','#174','18','4'],['Medio','22','#161','12'],['Alto','6','14','#128']].map(([label,...vals])=>`
+            <div style="font-size:11px;color:var(--muted);display:flex;align-items:center;">${label}</div>
+            ${vals.map(v=>`<div style="text-align:center;padding:10px 6px;border-radius:6px;font-family:var(--mono);font-size:14px;font-weight:700;background:${v.startsWith('#')?'var(--green-dim)':'var(--surface2)'};color:${v.startsWith('#')?'var(--green)':'var(--muted)'};">${v.startsWith('#')?v.slice(1):v}</div>`).join('')}
+          `).join('')}
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--muted);">Diagonal = predicoes corretas. Valores fora da diagonal = erros do modelo.</div>
+      </div>
+    </div>`;
+}
+
+// ══ TURMAS ═════════════════════════════════════════════════════════════════
+function renderTurmas() {
+  document.getElementById('turmas-content').innerHTML = `
+    <div style="margin-bottom:16px;font-size:13px;color:var(--muted);">Clique em uma turma para abrir o dashboard correspondente.</div>
+    ${Object.entries(TURMAS).map(([tk,t])=>{
+      const pct_alto = Math.round(t.alto/t.total*100);
+      const pct_med  = Math.round(t.medio/t.total*100);
+      const pct_bx   = 100 - pct_alto - pct_med;
+      const media_freq = Math.round(t.alunos.reduce((s,a)=>s+a.freq,0)/t.alunos.length);
+      const media_mat  = Math.round(t.alunos.reduce((s,a)=>s+a.mat,0)/t.alunos.length);
+      const media_port = Math.round(t.alunos.reduce((s,a)=>s+a.port,0)/t.alunos.length);
+      const pendentes  = t.alunos.filter(a=>a.status==='pendente').length;
+      const nivel_risco = pct_alto>30?'alto':pct_alto>15?'medio':'baixo';
+      return `
+      <div class="relatorio-card" style="cursor:pointer;transition:border-color .15s;" onclick="abrirTurma('${tk}')"
+           onmouseover="this.style.borderColor='rgba(45,212,160,0.4)'" onmouseout="this.style.borderColor='var(--border)'">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:44px;height:44px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:15px;font-weight:700;color:var(--green);">${tk}</div>
+            <div>
+              <div style="font-size:15px;font-weight:600;">Turma ${tk}</div>
+              <div style="font-size:11px;color:var(--muted);">${t.total} alunos &middot; E.E. Dom Bosco</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            ${pendentes>0?`<span style="background:var(--amber-dim);color:var(--amber);font-size:10px;padding:3px 8px;border-radius:10px;font-weight:600;">${pendentes} pendentes</span>`:''}
+            <span class="risk-badge r-${nivel_risco}" style="font-size:11px;">${pct_alto}% risco alto</span>
+            <span style="color:var(--muted);font-size:16px;">&#8594;</span>
+          </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px;">
+          ${[
+            ['Alto','var(--red)',t.alto],
+            ['Medio','var(--amber)',t.medio],
+            ['Baixo','var(--green)',t.baixo],
+            ['Media Mat.','var(--blue)',media_mat],
+            ['Media Port.','var(--blue)',media_port],
+            ['Freq. media','var(--muted)',media_freq+'%'],
+          ].map(([l,c,v])=>`
+          <div style="text-align:center;background:var(--surface2);border-radius:8px;padding:10px 4px;">
+            <div style="font-family:var(--mono);font-size:17px;font-weight:700;color:${c};">${v}</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:3px;">${l}</div>
+          </div>`).join('')}
+        </div>
+
+        <!-- Barra de composição -->
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px;">Composicao da turma por risco</div>
+          <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px;">
+            <div style="width:${pct_alto}%;background:var(--red);" title="Alto"></div>
+            <div style="width:${pct_med}%;background:var(--amber);" title="Medio"></div>
+            <div style="flex:1;background:var(--green);" title="Sem risco"></div>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:5px;">
+            <span style="font-size:10px;color:var(--red);">&#9632; Alto (${t.alto})</span>
+            <span style="font-size:10px;color:var(--amber);">&#9632; Medio (${t.medio})</span>
+            <span style="font-size:10px;color:var(--green);">&#9632; Sem risco (${t.baixo})</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+function abrirTurma(tk) {
+  // Navega para o dashboard e seleciona a turma correta
+  goTo('dashboard', document.getElementById('nav-dashboard'));
+  CT = tk;
+  SEL = null;
+  document.querySelectorAll('.pill').forEach(p => {
+    const match = p.textContent.replace(/\s/g,'') === tk.replace(/\s/g,'');
+    p.classList.toggle('active', match);
+  });
+  render();
+}
+
+// ══ CONFIG — Estado global real ════════════════════════════════════════════
+const CFG_DEFAULT = {
+  escola:'E.E. Dom Bosco', cidade:'São Luís - MA',
+  responsavel:'Coordenador Pedagogico', email:'escola@educa.ma.gov.br',
+  algoritmo:'Random Forest', ciclo:14, limiarAlto:70, limiarMedio:40,
+  sepCSV:';', alertas:true, relatorioAuto:false,
+  notifEmail:true, notifBrowser:false,
+  inclHistorico:false, inclShap:false,
+  temaDark:true, animacoes:true
+};
+
+// Carrega CFG do localStorage se existir, senão usa default
+function cfgLoad() {
+  try {
+    const s = localStorage.getItem('eduia_cfg');
+    if(s) Object.assign(CFG, JSON.parse(s));
+  } catch(e) {}
+}
+function cfgSave() {
+  try { localStorage.setItem('eduia_cfg', JSON.stringify(CFG)); } catch(e) {}
+}
+
+// Inicializa CFG com os defaults que ainda não existem
+Object.keys(CFG_DEFAULT).forEach(k=>{ if(CFG[k]===undefined) CFG[k]=CFG_DEFAULT[k]; });
+cfgLoad();
+
+// Aba ativa de config
+let cfgAba = 'escola';
+
+function renderConfig() {
+  const abas = [
+    {id:'escola',    label:'Perfil da escola'},
+    {id:'modelo',    label:'Modelo de IA'},
+    {id:'notif',     label:'Notificacoes'},
+    {id:'exportacao',label:'Exportacao'},
+  ];
+
+  document.getElementById('config-content').innerHTML = `
+  <!-- Abas internas -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px;flex-wrap:wrap;">
+    ${abas.map(a=>`
+      <button class="filter-btn ${cfgAba===a.id?'active':''}"
+              onclick="setCfgAba('${a.id}')"
+              style="border-radius:8px;">${a.label}</button>`).join('')}
+  </div>
+
+  <!-- Conteudo da aba -->
+  <div id="cfg-aba-content"></div>
+
+  <!-- Rodape sempre visivel -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:12px;">
+    <div style="font-size:11px;color:var(--muted);">
+      EduIA v1.0.0 &middot; Random Forest + SHAP &middot; SAEB/INEP 2022
+      <span id="cfg-unsaved" style="display:none;color:var(--amber);margin-left:10px;">&#9679; Alteracoes nao salvas</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-int" onclick="resetarConfig()">Restaurar padrão</button>
+      <button class="btn-int primary" onclick="salvarConfig()" style="padding:8px 20px;font-size:13px;">Salvar</button>
+    </div>
+  </div>`;
+
+  renderCfgAba();
+}
+
+function setCfgAba(id) {
+  cfgAba = id;
+  renderConfig();
+}
+
+function renderCfgAba() {
+  const el = document.getElementById('cfg-aba-content');
+  if(!el) return;
+
+  if(cfgAba === 'escola') {
+    el.innerHTML = `
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Identificacao da escola</span></div>
+      <div class="panel-body">
+        ${cfgField('Nome da escola','Exibido no cabecalho e nos relatorios exportados','text','cfg-escola',CFG.escola,'cfg-escola')}
+        ${cfgField('Cidade / Estado','Localidade para contexto dos dados','text','cfg-cidade',CFG.cidade,'cfg-cidade')}
+        ${cfgField('Responsavel pelo sistema','Professor ou coordenador que administra o EduIA','text','cfg-responsavel',CFG.responsavel,'cfg-responsavel')}
+        ${cfgField('E-mail de contato','Usado no envio de alertas e relatorios automaticos','email','cfg-email',CFG.email,'cfg-email')}
+      </div>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:12px 16px;margin-top:12px;font-size:12px;color:var(--muted);line-height:1.6;">
+      Os dados de perfil sao usados apenas localmente no sistema EduIA.<br>
+      Nenhuma informacao e enviada para servidores externos.
+    </div>`;
+
+  } else if(cfgAba === 'modelo') {
+    el.innerHTML = `
+    <div class="panel" style="margin-bottom:12px;">
+      <div class="panel-header"><span class="panel-title">Algoritmo de predicao</span></div>
+      <div class="panel-body">
+        <div class="config-row">
+          <div><div class="config-label">Algoritmo ativo</div><div class="config-desc">Modelo de machine learning usado nas predicoes</div></div>
+          <select id="cfg-algoritmo" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 12px;font-family:var(--sans);font-size:12px;outline:none;"
+                  onchange="cfgMark()">
+            <option ${CFG.algoritmo==='Random Forest'?'selected':''}>Random Forest</option>
+            <option ${CFG.algoritmo==='SVM (RBF)'?'selected':''}>SVM (RBF)</option>
+            <option ${CFG.algoritmo==='KNN (k=7)'?'selected':''}>KNN (k=7)</option>
+          </select>
+        </div>
+        <div style="background:var(--green-dim);border:1px solid rgba(45,212,160,.2);border-radius:8px;padding:10px 14px;margin-top:8px;font-size:12px;color:var(--green);line-height:1.6;">
+          Random Forest e o algoritmo com melhor desempenho (F1: 84.9%, AUC-ROC: 0.921). Troque apenas se tiver retreinado os modelos alternativos.
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Limiares de classificacao</span></div>
+      <div class="panel-body">
+        ${cfgSlider('Limiar risco alto (%)','Probabilidade minima para classificar como ALTO','cfg-limiarAlto',CFG.limiarAlto,50,95,'var(--red)')}
+        ${cfgSlider('Limiar risco medio (%)','Probabilidade minima para classificar como MEDIO','cfg-limiarMedio',CFG.limiarMedio,20,70,'var(--amber)')}
+        ${cfgSliderNum('Ciclo de reavaliação (dias)','Frequência com que o modelo reavalia todos os alunos','cfg-ciclo',CFG.ciclo,7,60)}
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:11px;color:var(--muted);line-height:1.6;">
+          Aluno com prob. &ge; limiar alto = RISCO ALTO.<br>
+          Aluno com prob. entre limiar medio e alto = RISCO MEDIO.<br>
+          Abaixo do limiar medio = SEM RISCO.
+        </div>
+      </div>
+    </div>`;
+    // Atualizar displays dos sliders
+    setTimeout(()=>{
+      ['cfg-limiarAlto','cfg-limiarMedio','cfg-ciclo'].forEach(id=>{
+        const inp = document.getElementById(id);
+        const out = document.getElementById(id+'-out');
+        if(inp && out) out.textContent = inp.value + (id==='cfg-ciclo'?' dias':'%');
+      });
+    }, 0);
+
+  } else if(cfgAba === 'notif') {
+    el.innerHTML = `
+    <div class="panel" style="margin-bottom:12px;">
+      <div class="panel-header"><span class="panel-title">Alertas automaticos</span></div>
+      <div class="panel-body">
+        ${cfgToggleRow('Alertas de risco alto','Notificar imediatamente ao detectar aluno em risco alto','alertas')}
+        ${cfgToggleRow('Relatorio automatico semanal','Gerar e exibir relatorio toda segunda-feira ao abrir o sistema','relatorioAuto')}
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Canais de notificacao</span></div>
+      <div class="panel-body">
+        ${cfgToggleRow('Notificação por e-mail','Enviar alertas para o e-mail cadastrado no perfil','notifEmail')}
+        ${cfgToggleRow('Notificação no navegador','Mostrar pop-up ao detectar novos riscos','notifBrowser')}
+        <div style="background:var(--amber-dim);border:1px solid rgba(245,166,35,.2);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:12px;color:var(--amber);line-height:1.6;">
+          Notificacoes por e-mail requerem a API Python rodando localmente.<br>Configure o SMTP em <code style="font-size:11px;">api/api.py</code>.
+        </div>
+      </div>
+    </div>`;
+
+  } else if(cfgAba === 'exportacao') {
+    el.innerHTML = `
+    <div class="panel" style="margin-bottom:12px;">
+      <div class="panel-header"><span class="panel-title">Formato do arquivo CSV</span></div>
+      <div class="panel-body">
+        <div class="config-row">
+          <div><div class="config-label">Separador de campos</div><div class="config-desc">Caractere usado entre colunas no arquivo exportado</div></div>
+          <select id="cfg-sepCSV" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 12px;font-family:var(--sans);font-size:12px;outline:none;"
+                  onchange="cfgMark()">
+            <option value=";" ${CFG.sepCSV===';'?'selected':''}>Ponto-e-virgula (;) — Excel BR</option>
+            <option value="," ${CFG.sepCSV===','?'selected':''}>Vírgula (,) — padrão internacional</option>
+            <option value="	" ${CFG.sepCSV==='\t'?'selected':''}>Tabulação — TSV</option>
+          </select>
+        </div>
+        ${cfgToggleRow('Incluir histórico de intervenções','Adicionar coluna com o histórico de ações de cada aluno','inclHistorico')}
+        ${cfgToggleRow('Incluir importancia SHAP','Adicionar colunas com os valores SHAP de cada variavel','inclShap')}
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Pre-visualizacao do CSV</span></div>
+      <div class="panel-body">
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.8;overflow-x:auto;white-space:nowrap;" id="csv-preview"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <button class="btn-int primary" onclick="exportarCSVTodos()">Baixar todas as turmas</button>
+          <button class="btn-int" onclick="exportarCSV('7A')">Exportar turma 7A</button>
+        </div>
+      </div>
+    </div>`;
+    renderCsvPreview();
+  }
+}
+
+function renderCsvPreview() {
+  const el = document.getElementById('csv-preview');
+  if(!el) return;
+  const sep = CFG.sepCSV || ';';
+  const header = csvHeader().map(v=>csvEscape(v, sep)).join(sep);
+  const ex1 = csvRow(TURMAS['7A'].alunos[0], '7A').map(v=>csvEscape(v, sep)).join(sep);
+  const ex2 = csvRow(TURMAS['7A'].alunos[5], '7A').map(v=>csvEscape(v, sep)).join(sep);
+  el.textContent = header+'\n'+ex1+'\n'+ex2+'\n...';
+}
+
+// ── Helpers de campo ────────────────────────────────────────────────────
+function cfgField(label, desc, type, id, val, cfgKey) {
+  return `
+  <div class="config-row">
+    <div><div class="config-label">${label}</div><div class="config-desc">${desc}</div></div>
+    <input class="config-input" type="${type}" id="${id}" value="${val}"
+           style="width:210px;font-size:12px;"
+           oninput="cfgMark()"
+           onblur="cfgValidate('${cfgKey}',this)">
+  </div>`;
+}
+
+function cfgSlider(label, desc, id, val, min, max, cor) {
+  return `
+  <div style="margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div><div class="config-label">${label}</div><div class="config-desc">${desc}</div></div>
+      <span id="${id}-out" style="font-family:var(--mono);font-size:14px;font-weight:700;color:${cor};min-width:40px;text-align:right;">${val}%</span>
+    </div>
+    <input type="range" id="${id}" min="${min}" max="${max}" value="${val}" step="1"
+           style="width:100%;accent-color:${cor};"
+           oninput="document.getElementById('${id}-out').textContent=this.value+'%';cfgMark()">
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;">
+      <span>${min}%</span><span>${max}%</span>
+    </div>
+  </div>`;
+}
+
+function cfgSliderNum(label, desc, id, val, min, max) {
+  return `
+  <div style="margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div><div class="config-label">${label}</div><div class="config-desc">${desc}</div></div>
+      <span id="${id}-out" style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--blue);min-width:55px;text-align:right;">${val} dias</span>
+    </div>
+    <input type="range" id="${id}" min="${min}" max="${max}" value="${val}" step="1"
+           style="width:100%;accent-color:var(--blue);"
+           oninput="document.getElementById('${id}-out').textContent=this.value+' dias';cfgMark()">
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;">
+      <span>${min} dias</span><span>${max} dias</span>
+    </div>
+  </div>`;
+}
+
+function cfgToggleRow(label, desc, key) {
+  if(CFG[key]===undefined) CFG[key]=CFG_DEFAULT[key]||false;
+  return `
+  <div class="config-row">
+    <div><div class="config-label">${label}</div><div class="config-desc">${desc}</div></div>
+    <div class="toggle ${CFG[key]?'on':''}" id="tog-${key}" onclick="toggleCfg('${key}')"></div>
+  </div>`;
+}
+
+function toggleCfg(key) {
+  CFG[key] = !CFG[key];
+  const el = document.getElementById('tog-'+key);
+  if(el) el.classList.toggle('on', CFG[key]);
+  cfgMark();
+  renderCsvPreview();
+}
+
+// Marca alteracoes nao salvas
+function cfgMark() {
+  const el = document.getElementById('cfg-unsaved');
+  if(el) el.style.display = 'inline';
+}
+
+// Validacao de campo ao sair
+function cfgValidate(key, input) {
+  const val = input.value.trim();
+  if(!val) {
+    input.style.borderColor = 'var(--red)';
+    toast('Campo nao pode ser vazio: '+key, 'warn');
+    input.value = CFG[key] || CFG_DEFAULT[key] || '';
+    setTimeout(()=>input.style.borderColor='', 1500);
+    return;
+  }
+  if(key==='cfg-email' && val && !val.includes('@')) {
+    input.style.borderColor = 'var(--red)';
+    toast('E-mail invalido — use o formato: nome@dominio.com', 'warn');
+    setTimeout(()=>input.style.borderColor='', 1500);
+    return;
+  }
+  input.style.borderColor = 'var(--green)';
+  setTimeout(()=>input.style.borderColor='', 1000);
+  cfgMark();
+}
+
+// Lê todos os inputs da tela e salva no CFG real
+function salvarConfig() {
+  const erros = [];
+
+  // Lê campos de texto do perfil
+  const mapText = {
+    'cfg-escola':'escola','cfg-cidade':'cidade',
+    'cfg-responsavel':'responsavel','cfg-email':'email'
+  };
+  Object.entries(mapText).forEach(([id,key])=>{
+    const el = document.getElementById(id);
+    if(el) {
+      const val = el.value.trim();
+      if(!val){ erros.push(key); return; }
+      if(key==='email' && !val.includes('@')){ erros.push('email (formato invalido)'); return; }
+      CFG[key] = val;
+    }
+  });
+
+  // Lê sliders do modelo
+  const mapSlider = {
+    'cfg-limiarAlto':'limiarAlto','cfg-limiarMedio':'limiarMedio','cfg-ciclo':'ciclo'
+  };
+  Object.entries(mapSlider).forEach(([id,key])=>{
+    const el = document.getElementById(id);
+    if(el) CFG[key] = parseInt(el.value);
+  });
+
+  // Valida limiares
+  if(CFG.limiarMedio >= CFG.limiarAlto) {
+    erros.push('limiar medio deve ser menor que limiar alto');
+  }
+
+  // Lê selects
+  const elAlg = document.getElementById('cfg-algoritmo');
+  if(elAlg) CFG.algoritmo = elAlg.value;
+  const elSep = document.getElementById('cfg-sepCSV');
+  if(elSep) CFG.sepCSV = elSep.value;
+
+  if(erros.length > 0) {
+    openModal('Erro ao salvar', 'Corrija os campos antes de salvar',
+      `<div style="font-size:13px;color:var(--muted);">
+        Os seguintes campos precisam ser corrigidos:<br><br>
+        ${erros.map(e=>`<span style="color:var(--red);">&#9679;</span> ${e}`).join('<br>')}
+      </div>`,
+      `<button class="modal-btn cancel" onclick="closeModal()">Fechar</button>`
+    );
+    return;
+  }
+
+  cfgSave();
+  const el = document.getElementById('cfg-unsaved');
+  if(el) el.style.display = 'none';
+
+  // Atualiza topbar com novo nome da escola se mudou
+  document.querySelector('.school-badge b').textContent = CFG.escola;
+
+  toast('Configurações salvas com sucesso!', 'success');
+}
+
+function resetarConfig() {
+  openModal(
+    'Restaurar configurações padrão',
+    'Esta acao nao pode ser desfeita.',
+    `<div style="font-size:13px;color:var(--muted);line-height:1.6;">
+      Todos os campos voltarao para os valores originais do sistema.<br><br>
+      <strong style="color:var(--text);">Isso inclui:</strong><br>
+      Nome da escola, e-mail, limiares, toggles e preferencias de exportacao.
+    </div>`,
+    `<button class="modal-btn cancel" onclick="closeModal()">Cancelar</button>
+     <button class="modal-btn warn" onclick="confirmarReset()">Restaurar tudo</button>`
+  );
+}
+
+function confirmarReset() {
+  Object.assign(CFG, CFG_DEFAULT);
+  cfgSave();
+  closeModal();
+  toast('Configurações restauradas para o padrão!', 'info');
+  renderConfig();
+}
+
+// ══ INIT ═══════════════════════════════════════════════════════════════════
+applyInterventionState();
+initAuth();
+document.querySelector('.school-badge b').textContent = CFG.escola;
+render();
+</script>
+</body>
+</html>
