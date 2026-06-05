@@ -1,4 +1,4 @@
-# 🎓 EduIA — Sistema Inteligente de Identificação de Dificuldades de Aprendizagem
+# 🎓 EduIA — Protótipo Inteligente de Identificação de Dificuldades de Aprendizagem
 
 <div align="center">
 
@@ -26,7 +26,7 @@
 
 ## 📋 Sobre o Projeto
 
-O **EduIA** é um sistema baseado em Inteligência Artificial desenvolvido para auxiliar professores e coordenadores pedagógicos na **identificação precoce de dificuldades de aprendizagem** em alunos do ensino básico.
+O **EduIA** é um Protótipo baseado em Inteligência Artificial desenvolvido para auxiliar professores e coordenadores pedagógicos na **identificação precoce de dificuldades de aprendizagem** em alunos do ensino básico.
 
 O sistema utiliza um modelo de **Random Forest** treinado com dados educacionais sintéticos, com interpretabilidade via **SHAP (SHapley Additive exPlanations)**, e é disponibilizado via **API REST** (FastAPI) e **dashboard interativo** (Streamlit + HTML/CSS/JS).
 
