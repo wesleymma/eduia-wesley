@@ -249,7 +249,7 @@ def avaliar(resultados, X_test, y_test):
             melhor_f1   = f1
             melhor_nome = nome
 
-    print(f"\n✅ Modelo vencedor: {melhor_nome} (F1 = {melhor_f1:.4f})")
+    print(f"\n[OK] Modelo vencedor: {melhor_nome} (F1 = {melhor_f1:.4f})")
 
     # Matriz de confusão do vencedor
     y_pred_best = resultados[melhor_nome]['modelo'].predict(X_test)
