@@ -266,10 +266,19 @@ def render_grafico_desempenho(alunos_resp: List[Dict], alunos_data: List[Dict]):
     st.plotly_chart(fig, use_container_width=True)
 
 
+def _txt_intervencao(v) -> str:
+    """A API devolve lista de ações; o modo demo devolve texto."""
+    return "; ".join(v) if isinstance(v, list) else str(v)
+
+
 def render_shap_global():
-    labels = ["Frequência escolar","Nota matemática","Nota português","Reprovações ant."]
-    vals   = [38, 31, 18, 13]
-    cores  = ["#ff4d6d","#f5a623","#4f8ef7","#7a7f94"]
+    m = chamar_api_metricas() or {}
+    ranking = m.get("shap_global_alto") or [
+        {"rotulo": "Frequência", "importancia": 38}, {"rotulo": "Matemática", "importancia": 31},
+        {"rotulo": "Português", "importancia": 18}, {"rotulo": "Reprovações", "importancia": 13}]
+    labels = [r["rotulo"] for r in ranking][::-1]
+    vals   = [r["importancia"] for r in ranking][::-1]
+    cores  = ["#1d4e89"] * len(vals)
     fig = go.Figure(go.Bar(
         x=vals, y=labels, orientation="h",
         marker_color=cores,
@@ -277,7 +286,7 @@ def render_shap_global():
         textposition="outside", textfont=dict(color="#a0a4b8", size=12),
     ))
     fig.update_layout(
-        height=200, margin=dict(t=10,b=10,l=10,r=50),
+        height=280, margin=dict(t=10,b=10,l=10,r=50),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font_color="#a0a4b8", xaxis=dict(visible=False),
     )
@@ -328,7 +337,7 @@ def render_detalhe_aluno(aluno_data: Dict, aluno_resp: Dict):
         )
     st.markdown(
         f"<div class='int-box'><strong>💡 Intervenção sugerida</strong>"
-        f"{aluno_resp['intervencao']}</div>",
+        f"{_txt_intervencao(aluno_resp['intervencao'])}</div>",
         unsafe_allow_html=True
     )
 
@@ -341,7 +350,7 @@ def exportar_csv(turma: str, resultado: Dict) -> bytes:
     for a in resultado["alunos"]:
         linhas.append(sep.join([
             a["nome"], turma, a["risco"],
-            str(a["probabilidade"]), a["intervencao"]
+            str(a["probabilidade"]), _txt_intervencao(a["intervencao"])
         ]))
     return "\n".join(linhas).encode("utf-8")
 
@@ -381,7 +390,7 @@ def main():
         metricas_api = chamar_api_metricas()
         if metricas_api:
             st.success("🟢 API conectada")
-            rf = metricas_api.get("Random Forest", {})
+            rf = metricas_api.get("modelos", {}).get("Random Forest", {}).get("teste", {})
             st.metric("Acurácia (RF)",  f"{rf.get('acuracia','-'):.1%}"
                       if isinstance(rf.get("acuracia"), float) else "-")
             st.metric("F1-Score (RF)",  f"{rf.get('f1','-'):.1%}"
