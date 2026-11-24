@@ -1,54 +1,73 @@
-/**
- * EduIA — Modelo de IA — métricas e matriz de confusão
- * Dashboard de Identificacao de Dificuldades de Aprendizagem
- * TCC — Engenharia de Software, UNDB — Sao Luis/MA
- * Autor: Wesley Matheus Martins Aguiar
- */
+/* EduIA — tela "Como o risco é calculado": avaliação honesta do modelo. */
+function telaModelo() {
+  const el = $('#tela-modelo');
+  if (!MODELO) { el.innerHTML = '<p class="texto">Dados do modelo ausentes. Rode <code>python modelo/treinar.py</code> e <code>python modelo/exportar_demo.py</code>.</p>'; return; }
+  const M = MODELO, rf = M.modelos['Random Forest'];
+  const data = new Date(M.geradoEm).toLocaleDateString('pt-BR');
+  const linhaM = (nome, m) => `<tr class="${nome === 'Random Forest' ? 'destaque-linha' : ''}">
+      <td class="nome">${esc(nome)}${nome === 'Random Forest' ? ' <span style="font-weight:400;color:var(--ink-2)">(em uso)</span>' : ''}</td>
+      <td class="num">${pct(m.cv_f1_media)} ± ${fmt(m.cv_f1_desvio * 100, 1)}</td>
+      <td class="num">${pct(m.teste.acuracia)}</td><td class="num">${pct(m.teste.f1)}</td>
+      <td class="num">${fmt(m.teste.auc, 3)}</td><td class="num">${pct(m.teste.recall_alto)}</td></tr>`;
+  const mx = M.matriz.valores, maxv = Math.max(...mx.flat());
+  const celula = (v, i, j) => {
+    const a = v / maxv;
+    const fundo = i === j ? `color-mix(in srgb, var(--azul) ${Math.round(25 + a * 60)}%, var(--sheet))` : (v ? 'var(--alto-soft)' : 'var(--sheet-2)');
+    const txt = i === j && a > .5 ? 'var(--on-azul)' : 'var(--ink)';
+    return `<div class="cel" style="background:${fundo};color:${txt}" aria-label="real ${M.matriz.labels[i]}, previsto ${M.matriz.labels[j]}: ${v}">${v}</div>`;
+  };
 
-// ══ MODELO ═════════════════════════════════════════════════════════════════
-function renderModelo() {
-  document.getElementById('modelo-content').innerHTML = `
-    <div class="modelo-grid">
-      <div class="panel"><div class="panel-header"><span class="panel-title">Comparacao de modelos</span></div>
-        <div class="panel-body">
-          ${[['Random Forest','87.3%','84.9%','0.921','var(--green)',true],['SVM (RBF)','82.1%','80.4%','0.887','var(--muted)',false],['KNN (k=7)','78.6%','76.2%','0.851','var(--muted)',false]].map(([n,a,f,r,c,best])=>`
-          <div style="background:${best?'var(--green-dim)':'var(--surface2)'};border:1px solid ${best?'rgba(45,212,160,.3)':'var(--border)'};border-radius:8px;padding:12px;margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-weight:600;font-size:13px;color:${c}">${n}</span>
-              ${best?'<span style="font-size:10px;background:var(--green);color:#0f1117;padding:2px 8px;border-radius:10px;font-weight:700;">Vencedor</span>':''}
-            </div>
-            <div style="display:flex;gap:16px;">
-              <div><div style="font-size:10px;color:var(--muted);">Acurácia</div><div style="font-family:var(--mono);font-size:14px;font-weight:700;">${a}</div></div>
-              <div><div style="font-size:10px;color:var(--muted);">F1-Score</div><div style="font-family:var(--mono);font-size:14px;font-weight:700;">${f}</div></div>
-              <div><div style="font-size:10px;color:var(--muted);">AUC-ROC</div><div style="font-family:var(--mono);font-size:14px;font-weight:700;">${r}</div></div>
-            </div>
-          </div>`).join('')}
-        </div>
-      </div>
-      <div class="panel"><div class="panel-header"><span class="panel-title">Importancia das variaveis (SHAP global)</span></div>
-        <div class="panel-body">
-          ${[{l:'Frequencia escolar',v:38,c:'var(--red)'},{l:'Nota matematica',v:31,c:'var(--amber)'},{l:'Nota portugues',v:18,c:'var(--blue)'},{l:'Reprovacoes ant.',v:13,c:'var(--muted)'}].map(s=>`
-          <div class="shap-row" style="margin-bottom:12px;">
-            <span class="shap-label" style="width:160px;">${s.l}</span>
-            <div class="shap-track" style="height:10px;"><div class="shap-fill" style="height:10px;width:${s.v}%;background:${s.c}"></div></div>
-            <span class="shap-pct">${s.v}%</span>
-          </div>`).join('')}
-        </div>
-      </div>
+  el.innerHTML = `
+    <div class="texto" style="margin-bottom:24px">
+      <p>O EduIA usa um <b>Random Forest</b> que recebe sete indicadores do aluno e devolve a probabilidade de cada nível de risco.
+      Para cada aluno, o SHAP mostra quanto cada indicador empurrou a chance de risco alto para cima ou para baixo.</p>
+      <p>Treino de ${data}: ${fmt(M.nRegistros)} registros ${M.origem === 'sintetico' ? 'sintéticos' : 'do arquivo ' + esc(M.origem)}, ${fmt(M.nTeste)} separados para teste antes de qualquer ajuste.
+      ${esc(M.validacao)}.</p>
     </div>
-    <div class="panel"><div class="panel-header"><span class="panel-title">Matriz de confusao — Random Forest</span><span class="panel-hint">Conjunto de teste (20%)</span></div>
-      <div class="panel-body">
-        <div style="display:grid;grid-template-columns:80px repeat(3,1fr);gap:6px;max-width:420px;">
-          <div></div>
-          <div style="text-align:center;font-size:11px;color:var(--muted);padding:6px;">Baixo</div>
-          <div style="text-align:center;font-size:11px;color:var(--muted);padding:6px;">Medio</div>
-          <div style="text-align:center;font-size:11px;color:var(--muted);padding:6px;">Alto</div>
-          ${[['Baixo','#174','18','4'],['Medio','22','#161','12'],['Alto','6','14','#128']].map(([label,...vals])=>`
-            <div style="font-size:11px;color:var(--muted);display:flex;align-items:center;">${label}</div>
-            ${vals.map(v=>`<div style="text-align:center;padding:10px 6px;border-radius:6px;font-family:var(--mono);font-size:14px;font-weight:700;background:${v.startsWith('#')?'var(--green-dim)':'var(--surface2)'};color:${v.startsWith('#')?'var(--green)':'var(--muted)'};">${v.startsWith('#')?v.slice(1):v}</div>`).join('')}
-          `).join('')}
+
+    <section class="bloco" aria-labelledby="h-comp">
+      <div class="bloco-topo"><h2 id="h-comp">Comparação com outros modelos e com uma regra simples</h2></div>
+      <div class="tabela-wrap"><table class="tabela">
+        <thead><tr><th>Modelo</th><th class="num">F1 na validação cruzada</th><th class="num">Acurácia (teste)</th><th class="num">F1 (teste)</th><th class="num">AUC-ROC</th><th class="num">Acerto nos casos de risco alto</th></tr></thead>
+        <tbody>
+          ${Object.entries(M.modelos).map(([n, m]) => linhaM(n, m)).join('')}
+          <tr><td class="nome">Regra sem modelo <span style="font-weight:400;color:var(--ink-2)">(${esc(M.baseline.descricao)})</span></td>
+            <td class="num">—</td><td class="num">${pct(M.baseline.acuracia)}</td><td class="num">${pct(M.baseline.f1)}</td><td class="num">—</td><td class="num">${pct(M.baseline.recall_alto)}</td></tr>
+        </tbody></table></div>
+      <div class="bloco-corpo"><p class="rodape-nota" style="margin:0">${esc(M.justificativa)}</p></div>
+    </section>
+
+    <div class="grade-2">
+      <section class="bloco" aria-labelledby="h-mat">
+        <div class="bloco-topo"><h2 id="h-mat">Matriz de confusão</h2><span class="nota">Random Forest, ${fmt(M.nTeste)} alunos de teste</span></div>
+        <div class="bloco-corpo">
+          <div class="matriz" role="table" aria-label="Matriz de confusão">
+            <div class="cab lado">real ↓ previsto →</div>${M.matriz.labels.map(l => `<div class="cab">${l}</div>`).join('')}
+            ${mx.map((lin, i) => `<div class="cab lado">${M.matriz.labels[i]}</div>${lin.map((v, j) => celula(v, i, j)).join('')}`).join('')}
+          </div>
+          <p class="rodape-nota">Diagonal: acertos. Dos ${mx[2].reduce((s, v) => s + v, 0)} alunos de risco alto, o modelo reconheceu ${mx[2][2]} e nenhum foi classificado como risco baixo: ${mx[2][0] === 0 ? 'o erro que mais importa não aconteceu no teste.' : mx[2][0] + ' foram classificados como baixo.'}</p>
         </div>
-        <div style="margin-top:12px;font-size:11px;color:var(--muted);">Diagonal = predicoes corretas. Valores fora da diagonal = erros do modelo.</div>
+      </section>
+      <section class="bloco" aria-labelledby="h-imp2">
+        <div class="bloco-topo"><h2 id="h-imp2">Peso médio de cada indicador</h2><span class="nota">SHAP, classe risco alto</span></div>
+        <div class="bloco-corpo">${htmlImportancia()}</div>
+      </section>
+    </div>
+
+    <section class="bloco" style="margin-top:24px" aria-labelledby="h-fig">
+      <div class="bloco-topo"><h2 id="h-fig">Distribuição dos valores SHAP</h2><span class="nota">figura gerada pelo treino</span></div>
+      <div class="bloco-corpo">
+        <figure class="figura"><img src="../backend/modelo/artefatos/shap_summary.png" alt="Gráfico SHAP: cada ponto é um aluno; à direita do zero o indicador aumenta a chance de risco alto." loading="lazy" width="1232" height="672" onerror="this.closest('section').hidden=true">
+        <figcaption>Cada ponto é um aluno do teste. Cor: valor do indicador (azul baixo, rosa alto). À direita do zero, o indicador aumenta a chance de risco alto.</figcaption></figure>
       </div>
+    </section>
+
+    <div class="aviso" style="margin-top:24px">
+      <h3>Limites que a escola precisa conhecer</h3>
+      <ul>
+        ${M.origem === 'sintetico' ? '<li>Os dados de treino são sintéticos. As métricas mostram que o modelo recupera os perfis do gerador; o desempenho com alunos reais só se mede com dados reais.</li>' : ''}
+        <li>Nível socioeconômico e programa social entram no cálculo. Eles ajudam a prever, mas não descrevem o aluno: use a estimativa para priorizar apoio, nunca para rotular.</li>
+        <li>O risco é uma estimativa estatística, não um diagnóstico. A decisão sobre cada intervenção é da equipe pedagógica.</li>
+      </ul>
     </div>`;
 }

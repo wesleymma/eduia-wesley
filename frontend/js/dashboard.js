@@ -1,113 +1,169 @@
-/**
- * EduIA — Dashboard — métricas, tabela, gráficos e SHAP
- * Dashboard de Identificacao de Dificuldades de Aprendizagem
- * TCC — Engenharia de Software, UNDB — Sao Luis/MA
- * Autor: Wesley Matheus Martins Aguiar
- */
+/* EduIA — tela "Turma": leitura rápida da turma, lista ordenável e ficha. */
+let graficoDispersao = null;
 
-// ══ DASHBOARD ══════════════════════════════════════════════════════════════
-function render() {
-  const d = TURMAS[CT];
-  renderMetrics(d); renderTabela(d); renderDetail(null); renderCharts(d); renderGlobalShap(d);
-  document.getElementById('dist-label').textContent = d.total+' alunos';
-}
+function telaTurma() {
+  const t = TURMAS[ESTADO.turma];
+  const r = resumo(t.alunos);
+  const semInicio = t.alunos.filter(a => a.risco === 'alto' && a.status === 'pendente').length;
+  const p = n => (n / r.total * 100).toFixed(1);
 
-function renderMetrics(d) {
-  const items = [
-    { label:'Total alunos', val:d.total, sub:'na turma', color:'var(--green)', badge:null, click:null },
-    { label:'Risco alto',   val:d.alto,  sub:Math.round(d.alto/d.total*100)+'% da turma',  color:'var(--red)',   badge:'Ação imediata', click:'alto' },
-    { label:'Risco medio',  val:d.medio, sub:Math.round(d.medio/d.total*100)+'% da turma', color:'var(--amber)', badge:'Monitorar',     click:'medio' },
-    { label:'Sem risco',    val:d.baixo, sub:Math.round(d.baixo/d.total*100)+'% da turma', color:'var(--blue)',  badge:null,           click:'baixo' },
-  ];
-  document.getElementById('metrics').innerHTML = items.map(m=>`
-    <div class="metric-card" style="--accent:${m.color}" ${m.click?`onclick="irParaAlunos('${m.click}')" title="Ver alunos com risco ${m.click}"`:''}> 
-      <div class="metric-label">${m.label}</div>
-      <div class="metric-val" style="color:${m.color}">${m.val}</div>
-      <div class="metric-sub">${m.sub}</div>
-      ${m.badge?`<div class="metric-badge" style="background:${m.color}22;color:${m.color}">${m.badge}</div>`:''}
-    </div>`).join('');
-}
-
-function irParaAlunos(filtro) {
-  FA = filtro;
-  goTo('alunos', document.getElementById('nav-alunos'));
-}
-
-function renderTabela(d) {
-  document.getElementById('aluno-tbody').innerHTML = d.alunos.map(a=>`
-    <tr id="row-${a.id}" onclick="selAluno('${a.id}')" class="${SEL===a.id?'selected':''}">
-      <td style="padding-left:18px;"><div class="name-cell"><div class="avatar" style="background:${a.bg};color:${a.cor}">${a.init}</div><span>${a.nome}</span></div></td>
-      <td><span class="risk-badge r-${a.risco}">${a.risco}</span></td>
-      <td><div class="prob-bar-wrap"><div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${a.prob}%;background:${a.cor}"></div></div><span class="prob-val">${a.prob}%</span></div></td>
-      <td style="font-family:var(--mono);font-size:12px;color:${a.freq<75?'var(--red)':a.freq<85?'var(--amber)':'var(--green)'}">${a.freq}%</td>
-      <td style="font-family:var(--mono);font-size:12px;color:${a.mat<50?'var(--red)':a.mat<65?'var(--amber)':'var(--green)'}">${a.mat}</td>
-      <td style="font-family:var(--mono);font-size:12px;color:${a.port<50?'var(--red)':a.port<65?'var(--amber)':'var(--green)'}">${a.port}</td>
-    </tr>`).join('');
-}
-
-function selAluno(id) {
-  SEL = id; renderTabela(TURMAS[CT]);
-  const a = TURMAS[CT].alunos.find(x=>x.id===id);
-  renderDetail(a);
-}
-
-function renderDetail(a) {
-  const p = document.getElementById('detail-panel');
-  if(!a){ p.innerHTML='<div class="detail-empty"><span class="icon">&#8592;</span>Selecione um aluno<br>para ver o diagnóstico<br>e a intervenção sugerida</div>'; return; }
-  const SL=['Frequência','Nota mat.','Nota port.','Reprovações'], SC=['var(--red)','var(--amber)','var(--blue)','var(--muted)'];
-  p.innerHTML = `
-    <div class="panel-header">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="avatar" style="background:${a.bg};color:${a.cor};width:34px;height:34px;font-size:12px;">${a.init}</div>
-        <div><div style="font-weight:600;font-size:13px;">${a.nome}</div><span class="risk-badge r-${a.risco}" style="font-size:10px;">${a.risco} ${a.prob}%</span></div>
-      </div>
-      <button class="btn-int" onclick="verIntervencaoAluno('${a.id}')" style="font-size:11px;">Ver intervenção</button>
+  $('#tela-turma').innerHTML = `
+    <div class="abertura">
+      <p>${esc(t.nome)} tem <b class="em-alto">${r.alto} ${r.alto === 1 ? 'aluno' : 'alunos'} em risco alto</b>
+        e ${r.medio} em risco médio, de ${r.total}.
+        ${r.alto ? (semInicio ? `Dos casos de risco alto, ${semInicio} ainda ${semInicio === 1 ? 'está' : 'estão'} sem intervenção iniciada.` : 'Todos os casos de risco alto já têm intervenção iniciada.') : ''}</p>
     </div>
-    <div class="panel-body">
-      <div class="mini-metrics">
-        <div class="mini-card"><div class="mini-label">Frequência</div><div class="mini-val" style="color:${a.freq<75?'var(--red)':a.freq<85?'var(--amber)':'var(--green)'}">${a.freq}%</div></div>
-        <div class="mini-card"><div class="mini-label">Matemática</div><div class="mini-val" style="color:${a.mat<50?'var(--red)':a.mat<65?'var(--amber)':'var(--green)'}">${a.mat}</div></div>
-        <div class="mini-card"><div class="mini-label">Português</div><div class="mini-val" style="color:${a.port<50?'var(--red)':a.port<65?'var(--amber)':'var(--green)'}">${a.port}</div></div>
+    <div class="composicao" aria-label="Composição da turma por nível de risco">
+      <div class="composicao-barra">
+        <span style="width:${p(r.alto)}%;background:var(--alto)"></span>
+        <span style="width:${p(r.medio)}%;background:var(--medio)"></span>
+        <span style="width:${p(r.baixo)}%;background:var(--baixo)"></span>
       </div>
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px;">Fatores SHAP — por que este risco?</div>
-      ${a.shap.map((v,i)=>`<div class="shap-row"><span class="shap-label">${SL[i]}</span><div class="shap-track"><div class="shap-fill" style="width:${v}%;background:${SC[i]}"></div></div><span class="shap-pct">${v}%</span></div>`).join('')}
-      <div class="int-box"><strong>Intervenção sugerida</strong>${a.int}</div>
+      <div class="composicao-legenda">
+        <span>${riscoTag('alto')} <b>${r.alto}</b></span>
+        <span>${riscoTag('medio')} <b>${r.medio}</b></span>
+        <span>${riscoTag('baixo')} <b>${r.baixo}</b></span>
+        <span style="margin-left:auto">Frequência média <b>${fmt(r.freq)}%</b> · Matemática <b>${fmt(r.mat)}</b> · Português <b>${fmt(r.port)}</b></span>
+      </div>
+    </div>
+
+    <div class="grade-turma">
+      <section class="bloco" aria-labelledby="h-lista">
+        <div class="bloco-topo"><h2 id="h-lista">Lista da turma</h2><span class="nota">Clique em um aluno para ver a ficha</span></div>
+        <div class="tabela-wrap">${htmlTabelaAlunos(ordenar(t.alunos), { turma: false })}</div>
+      </section>
+      <aside class="bloco ficha" id="ficha" aria-live="polite"></aside>
+    </div>
+
+    <div class="grade-2">
+      <section class="bloco" aria-labelledby="h-disp">
+        <div class="bloco-topo"><h2 id="h-disp">Frequência e Matemática</h2><span class="nota">cada ponto é um aluno</span></div>
+        <div class="bloco-corpo"><div class="grafico"><canvas id="cv-disp" role="img" aria-label="Gráfico de dispersão de frequência por nota de Matemática, por nível de risco"></canvas></div></div>
+      </section>
+      <section class="bloco" aria-labelledby="h-imp">
+        <div class="bloco-topo"><h2 id="h-imp">O que mais pesa no risco alto</h2><span class="nota">média do modelo, todas as turmas</span></div>
+        <div class="bloco-corpo">${htmlImportancia()}</div>
+      </section>
     </div>`;
+
+  ligarTabela($('#tela-turma'), telaTurma);
+  desenharFicha();
+  desenharDispersao(t.alunos);
 }
 
-function verIntervencaoAluno(id) {
-  goTo('intervencoes', document.getElementById('nav-intervencoes'));
+function ordenar(lista) {
+  const { col, dir } = ESTADO.ordem;
+  return [...lista].sort((a, b) => {
+    const x = a[col], y = b[col];
+    return (typeof x === 'string' ? x.localeCompare(y, 'pt-BR') : x - y) * dir;
+  });
 }
 
-function renderCharts(d) {
-  if(!window.Chart) {
-    document.querySelectorAll('.chart-wrap').forEach(w=>{
-      w.innerHTML = '<div class="chart-fallback">Não foi possível carregar os gráficos. Verifique a conexão com a internet para baixar o Chart.js.</div>';
+function htmlTabelaAlunos(lista, { turma }) {
+  const th = (col, rot, num, opc) => {
+    const ativo = ESTADO.ordem.col === col;
+    const sort = ativo ? (ESTADO.ordem.dir === 1 ? 'ascending' : 'descending') : null;
+    return `<th class="${num ? 'num' : ''} ${opc ? 'opcional' : ''}" ${sort ? `aria-sort="${sort}"` : ''}><button type="button" data-ordem="${col}">${rot}</button></th>`;
+  };
+  return `<table class="tabela">
+    <thead><tr>
+      ${th('nome', 'Aluno')}
+      ${turma ? th('turma', 'Turma') : ''}
+      ${th('pAlto', 'Chance de risco alto', true)}
+      <th>Nível</th>
+      ${th('freq', 'Freq.', true)}${th('mat', 'Mat.', true, true)}${th('port', 'Port.', true, true)}
+    </tr></thead>
+    <tbody>${lista.map(a => `
+      <tr data-id="${a.id}" tabindex="0" aria-selected="${ESTADO.sel === a.id}">
+        <td class="nome">${esc(a.nome)}</td>
+        ${turma ? `<td class="turma-col">${esc(TURMAS[a.turma].nome)}</td>` : ''}
+        <td class="num"><div class="prob"><div class="prob-trilho"><span style="width:${a.pAlto}%"></span></div><b>${fmt(a.pAlto)}%</b></div></td>
+        <td>${riscoTag(a.risco)}</td>
+        <td class="num ${nivel('freq', a.freq)}">${a.freq}%</td>
+        <td class="num opcional ${nivel('mat', a.mat)}">${a.mat}</td>
+        <td class="num opcional ${nivel('port', a.port)}">${a.port}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+/** Ordenação por cabeçalho e seleção por clique ou teclado. */
+function ligarTabela(raiz, rerender, aoSelecionar) {
+  $$('[data-ordem]', raiz).forEach(b => b.addEventListener('click', () => {
+    const col = b.dataset.ordem;
+    ESTADO.ordem = ESTADO.ordem.col === col ? { col, dir: -ESTADO.ordem.dir } : { col, dir: col === 'nome' || col === 'turma' ? 1 : -1 };
+    rerender();
+    $(`[data-ordem="${col}"]`, raiz)?.focus();
+  }));
+  $$('tbody tr', raiz).forEach(tr => {
+    const sel = () => {
+      ESTADO.sel = tr.dataset.id;
+      $$('tbody tr', raiz).forEach(x => x.setAttribute('aria-selected', x === tr));
+      (aoSelecionar || desenharFicha)(tr.dataset.id);
+    };
+    tr.addEventListener('click', sel);
+    tr.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sel(); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); tr.nextElementSibling?.focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); tr.previousElementSibling?.focus(); }
     });
-    return;
-  }
-  if(CD) CD.destroy(); if(CP) CP.destroy();
-  const base = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:'#7a7f94', font:{ family:"'DM Sans'" }, boxWidth:10, padding:12 } } } };
-  CD = new Chart(document.getElementById('chartDist').getContext('2d'), {
-    type:'doughnut',
-    data:{ labels:['Risco alto','Risco medio','Sem risco'], datasets:[{ data:[d.alto,d.medio,d.baixo], backgroundColor:['rgba(255,77,109,.8)','rgba(245,166,35,.8)','rgba(45,212,160,.8)'], borderColor:'#171b26', borderWidth:3, hoverOffset:6 }] },
-    options:{ ...base, cutout:'68%' }
-  });
-  CP = new Chart(document.getElementById('chartPerf').getContext('2d'), {
-    type:'bar',
-    data:{ labels:d.alunos.map(a=>a.nome.split(' ')[0]), datasets:[
-      { label:'Matemática', data:d.alunos.map(a=>a.mat),  backgroundColor:'rgba(79,142,247,.7)', borderRadius:4 },
-      { label:'Português',  data:d.alunos.map(a=>a.port), backgroundColor:'rgba(45,212,160,.5)', borderRadius:4 },
-    ]},
-    options:{ ...base, scales:{ x:{ ticks:{ color:'#7a7f94', font:{ family:"'DM Sans'", size:11 } }, grid:{ color:'rgba(255,255,255,.04)' } }, y:{ ticks:{ color:'#7a7f94' }, grid:{ color:'rgba(255,255,255,.04)' }, max:100 } } }
   });
 }
 
-function renderGlobalShap(d) {
-  document.getElementById('global-shap').innerHTML = d.shap.map(s=>`
-    <div class="shap-row" style="margin-bottom:10px;">
-      <span class="shap-label" style="width:160px;">${s.l}</span>
-      <div class="shap-track" style="height:8px;"><div class="shap-fill" style="height:8px;width:${s.v}%;background:${s.c}"></div></div>
-      <span class="shap-pct">${s.v}%</span>
-    </div>`).join('');
+function desenharFicha() {
+  const el = $('#ficha');
+  if (!el) return;
+  const a = TURMAS[ESTADO.turma].alunos.find(x => x.id === ESTADO.sel);
+  el.innerHTML = a ? htmlFicha(a) : `<div class="ficha-vazia"><h2>Ficha do aluno</h2>
+    <p>Selecione um aluno na lista para ver indicadores, probabilidade por nível, os fatores que mais pesaram e as ações sugeridas.</p></div>`;
+}
+
+function htmlImportancia() {
+  if (!MODELO) return '<p class="rodape-nota">Rode backend/modelo/exportar_demo.py para gerar os dados do modelo.</p>';
+  const itens = MODELO.shapGlobal;
+  const max = Math.max(...itens.map(i => i.importancia));
+  return `<div class="importancia">${itens.map(i => `
+    <div class="importancia-item"><span>${esc(i.rotulo)}</span>
+      <div class="trilho"><span style="width:${i.importancia / max * 100}%"></span></div><b>${fmt(i.importancia, 1)}%</b></div>`).join('')}
+    </div>
+    <p class="rodape-nota">Participação de cada variável no impacto médio sobre a probabilidade de risco alto (SHAP, conjunto de teste).</p>`;
+}
+
+function desenharDispersao(alunos) {
+  const cv = $('#cv-disp');
+  if (!cv) return;
+  if (!window.Chart) { cv.parentElement.innerHTML = '<div class="grafico-fallback">Não foi possível carregar o Chart.js (vendor/chart.umd.min.js).</div>'; return; }
+  if (graficoDispersao) graficoDispersao.destroy();
+  const forma = { alto: 'triangle', medio: 'rectRot', baixo: 'circle' };
+  const ds = ['alto', 'medio', 'baixo'].map(r => ({
+    label: RISCO_ROT[r],
+    data: alunos.filter(a => a.risco === r).map(a => ({ x: a.freq, y: a.mat, nome: a.nome, id: a.id })),
+    backgroundColor: cor(r), borderColor: cor(r), pointStyle: forma[r], pointRadius: 6, pointHoverRadius: 8,
+  }));
+  const tinta = cor('ink-2'), regua = cor('rule');
+  graficoDispersao = new Chart(cv, {
+    type: 'scatter',
+    data: { datasets: ds },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false, clip: false, layout: { padding: 8 },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: tinta, usePointStyle: true, boxWidth: 8, font: { family: 'Public Sans', size: 13 } } },
+        tooltip: { callbacks: { label: c => `${c.raw.nome}: freq. ${c.raw.x}%, mat. ${c.raw.y}` } },
+      },
+      scales: {
+        x: { title: { display: true, text: 'Frequência (%)', color: tinta }, min: 30, max: 100, ticks: { color: tinta }, grid: { color: regua } },
+        y: { title: { display: true, text: 'Nota de Matemática', color: tinta }, min: 0, max: 100, ticks: { color: tinta }, grid: { color: regua } },
+      },
+      onClick: (e, els) => {
+        if (!els.length) return;
+        const p = graficoDispersao.data.datasets[els[0].datasetIndex].data[els[0].index];
+        ESTADO.sel = p.id; telaTurma();
+        $(`tr[data-id="${p.id}"]`)?.scrollIntoView({ block: 'nearest' });
+      },
+    },
+  });
+}
+
+function seletorTurma() {
+  return `<div class="segmentado" role="group" aria-label="Turma">${Object.values(TURMAS).map(t =>
+    `<button type="button" data-turma="${t.cod}" aria-pressed="${t.cod === ESTADO.turma}">${esc(t.nome)}</button>`).join('')}</div>`;
 }

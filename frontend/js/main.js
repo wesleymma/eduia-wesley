@@ -1,12 +1,8 @@
-/**
- * EduIA — Main — inicialização do sistema
- * Dashboard de Identificacao de Dificuldades de Aprendizagem
- * TCC — Engenharia de Software, UNDB — Sao Luis/MA
- * Autor: Wesley Matheus Martins Aguiar
- */
-
-// ══ INIT ═══════════════════════════════════════════════════════════════════
-applyInterventionState();
-initAuth();
-document.querySelector('.school-badge b').textContent = CFG.escola;
-render();
+/* EduIA — inicialização */
+document.addEventListener('DOMContentLoaded', () => {
+  aplicarTema();
+  $('#escola-nome').textContent = CFG.escola;
+  $('#escola-cidade').textContent = CFG.cidade;
+  if (MODELO) $('#modelo-info').textContent = `Modelo de ${new Date(MODELO.geradoEm).toLocaleDateString('pt-BR')}`;
+  iniciarAcesso();
+});

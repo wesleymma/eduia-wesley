@@ -1,154 +1,116 @@
-/**
- * EduIA — Intervenções — plano pedagógico e acompanhamento
- * Dashboard de Identificacao de Dificuldades de Aprendizagem
- * TCC — Engenharia de Software, UNDB — Sao Luis/MA
- * Autor: Wesley Matheus Martins Aguiar
- */
+/* EduIA — tela "Intervenções": quadro por situação. */
+let filtroIntervTurma = null;  // null = turma aberta no painel
+let focoInterv = null;
 
-// ══ INTERVENCOES ═══════════════════════════════════════════════════════════
-function renderIntervencoes() {
-  const todos = Object.entries(TURMAS).flatMap(([tk,t])=>t.alunos.map(a=>({...a,turma:tk})));
-  document.getElementById('int-total').textContent    = todos.filter(a=>a.status!=='concluida').length;
-  document.getElementById('int-pendentes').textContent = todos.filter(a=>a.status==='pendente').length;
-  document.getElementById('int-concluidas').textContent= todos.filter(a=>a.status==='concluida').length;
+const ETAPAS = ['Iniciada', 'Família contatada', 'Acompanhamento', 'Encerrada'];
 
-  const ord = {pendente:0, andamento:1, concluida:2};
-  const sorted = [...todos].sort((a,b)=>ord[a.status]-ord[b.status]||b.prob-a.prob);
-
-  const grupos = [
-    { titulo:'Ação imediata necessária', cor:'var(--red)',   lista: sorted.filter(a=>a.risco==='alto'&&a.status!=='concluida') },
-    { titulo:'Monitoramento ativo',      cor:'var(--amber)', lista: sorted.filter(a=>a.risco==='medio') },
-    { titulo:'Concluídas / sem risco',   cor:'var(--green)', lista: sorted.filter(a=>a.risco==='baixo'||a.status==='concluida') },
+function telaIntervencoes() {
+  if (filtroIntervTurma === null) filtroIntervTurma = ESTADO.turma;
+  const base = todosAlunos().filter(a => a.status !== 'nenhuma' &&
+    (filtroIntervTurma === 'todas' || a.turma === filtroIntervTurma))
+    .sort((a, b) => b.pAlto - a.pAlto);
+  const cols = [
+    ['pendente', 'A iniciar'], ['andamento', 'Em andamento'], ['concluida', 'Encerradas'],
   ];
+  const btnT = (v, rot) => `<button type="button" data-ft="${v}" aria-pressed="${filtroIntervTurma === v}">${esc(rot)}</button>`;
 
-  document.getElementById('intervencoes-list').innerHTML = grupos
-    .filter(g=>g.lista.length>0)
-    .map(g=>`<div class="section-label" style="color:${g.cor}">${g.titulo}</div>${g.lista.map(a=>cardInt(a)).join('')}`)
-    .join('');
-}
-
-function cardInt(a) {
-  const SL = {pendente:'Pendente', andamento:'Em andamento', concluida:'Concluida'};
-  const cp = a.prog===100?'var(--green)':a.prog>0?'var(--blue)':'var(--surface2)';
-  const concluida = a.status==='concluida';
-  return `
-  <div class="int-card">
-    <div class="int-card-header">
-      <div class="int-aluno">
-        <div class="avatar" style="background:${a.bg};color:${a.cor};width:34px;height:34px;">${a.init}</div>
-        <div>
-          <div class="int-nome">${a.nome}</div>
-          <div class="int-sub">Turma ${a.turma} &middot; <span class="risk-badge r-${a.risco}" style="font-size:10px;padding:1px 7px;">${a.risco}</span></div>
-        </div>
+  $('#tela-intervencoes').innerHTML = `
+    <div class="ferramentas">
+      <div class="segmentado" role="group" aria-label="Filtrar por turma">
+        ${btnT('todas', 'Todas as turmas')}${Object.values(TURMAS).map(t => btnT(t.cod, t.nome)).join('')}
       </div>
-      <span class="status-badge s-${a.status}">${SL[a.status]}</span>
+      <span class="contagem">Alunos em risco baixo não entram no quadro.</span>
     </div>
-    <div class="int-texto">${a.int}</div>
-    <div class="progress-wrap">
-      <div class="progress-top"><span>Progresso</span><span>${a.prog}%</span></div>
-      <div class="progress-bg"><div class="progress-fill" style="width:${a.prog}%;background:${cp}"></div></div>
+    <div class="quadro">${cols.map(([st, rot]) => {
+      const itens = base.filter(a => a.status === st);
+      return `<section class="coluna" aria-labelledby="col-${st}">
+        <h2 id="col-${st}">${rot}<span>${itens.length}</span></h2>
+        ${itens.length ? itens.map(cartaoInterv).join('') : '<p class="vazio">Nenhum aluno nesta situação.</p>'}
+      </section>`;
+    }).join('')}</div>`;
+
+  $$('[data-ft]').forEach(b => b.addEventListener('click', () => { filtroIntervTurma = b.dataset.ft; telaIntervencoes(); }));
+  $$('[data-acao]').forEach(b => b.addEventListener('click', () => acaoInterv(b.dataset.acao, b.dataset.id)));
+  if (focoInterv) {
+    const c = $(`#card-${focoInterv}`);
+    if (c) { c.scrollIntoView({ block: 'center' }); c.querySelector('button')?.focus(); c.style.outline = '2px solid var(--azul)'; }
+    focoInterv = null;
+  }
+}
+
+function cartaoInterv(a) {
+  const feitas = Math.round(a.prog / 25);
+  const ult = a.hist[a.hist.length - 1];
+  const enc = a.status === 'concluida';
+  return `<article class="cartao" id="card-${a.id}">
+    <div class="cartao-topo">
+      <div><strong>${esc(a.nome)}</strong><small>${esc(TURMAS[a.turma].nome)} · ${fmt(a.pAlto)}% de chance de risco alto</small></div>
+      ${riscoTag(a.risco)}
     </div>
-    <div class="int-meta">
-      <div class="int-meta-item">Frequência: <b style="color:${a.freq<75?'var(--red)':a.freq<85?'var(--amber)':'var(--green)'}">${a.freq}%</b></div>
-      <div class="int-meta-item">Matemática: <b style="color:${a.mat<50?'var(--red)':a.mat<65?'var(--amber)':'var(--green)'}">${a.mat}</b></div>
-      <div class="int-meta-item">Português: <b style="color:${a.port<50?'var(--red)':a.port<65?'var(--amber)':'var(--green)'}">${a.port}</b></div>
-      <div class="int-meta-item">Prob. risco: <b style="color:${a.cor}">${a.prob}%</b></div>
+    <p class="proxima"><span>Próxima ação</span>${esc(a.acoes[0])}${a.acoes.length > 1 ? ` <em>+${a.acoes.length - 1}</em>` : ''}</p>
+    <div class="etapas" aria-hidden="true">${ETAPAS.map((_, i) => `<span class="${i < feitas ? 'feita' : ''}"></span>`).join('')}</div>
+    <div class="etapas-leg">${feitas ? `Etapa ${feitas} de 4: ${ETAPAS[feitas - 1]}` : 'Nenhuma etapa registrada'}</div>
+    ${ult ? `<p class="ultimo">Último registro: ${esc(ult)}</p>` : ''}
+    <div class="cartao-acoes">
+      ${enc ? '' : `<button class="btn btn-primario" type="button" data-acao="etapa" data-id="${a.id}">${a.status === 'pendente' ? 'Iniciar' : 'Registrar etapa'}</button>`}
+      ${enc ? '' : `<button class="btn" type="button" data-acao="familia" data-id="${a.id}">Contato com a família</button>`}
+      ${enc ? '' : `<button class="btn" type="button" data-acao="obs" data-id="${a.id}">Anotar</button>`}
+      <button class="btn btn-texto" type="button" data-acao="hist" data-id="${a.id}">Histórico${a.hist.length ? ` (${a.hist.length})` : ''}</button>
     </div>
-    <div class="int-actions">
-      ${!concluida ? `<button class="btn-int primary" onclick="avancarStatus('${a.id}','${a.turma}',event)">Atualizar progresso</button>` : '<button class="btn-int concluido" disabled>Concluida</button>'}
-      <button class="btn-int" onclick="modalHistorico('${a.id}','${a.turma}',event)">Ver histórico</button>
-      <button class="btn-int warn" onclick="modalNotificar('${a.id}','${a.turma}',event)">Notificar família</button>
-      ${!concluida ? `<button class="btn-int" onclick="modalRegistrar('${a.id}','${a.turma}',event)">Registrar observação</button>` : ''}
-    </div>
-  </div>`;
+  </article>`;
 }
 
-function avancarStatus(id, turma, e) {
-  if(e) e.stopPropagation();
-  const a = TURMAS[turma].alunos.find(al=>al.id===id);
-  if(!a || a.status==='concluida') return;
-  const passos = {pendente:{status:'andamento',prog:25,msg:'Intervenção iniciada!'}, andamento:{prog:null,msg:'Progresso atualizado!'}};
-  if(a.status==='pendente') { a.status='andamento'; a.prog=25; a.hist.push('Intervenção iniciada em '+hojeStr()); }
-  else { a.prog = Math.min(100, a.prog+25); if(a.prog===100){ a.status='concluida'; a.hist.push('Intervenção concluída em '+hojeStr()); } else { a.hist.push('Progresso atualizado para '+a.prog+'% em '+hojeStr()); } }
-  saveInterventionState();
-  toast('Progresso atualizado para '+a.prog+'%', a.prog===100?'success':'info');
-  renderIntervencoes();
+function registrar(a, texto) {
+  a.hist.push(`${texto} · ${hoje()}`);
+  salvarIntervencoes();
+  atualizarContadores();
+  focoInterv = a.id;
+  telaIntervencoes();
 }
 
-function hojeStr() {
-  const d = new Date();
-  return d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear();
-}
-
-function getAluno(id, turma) {
-  return TURMAS[turma]?.alunos.find(a=>a.id===id);
-}
-
-function modalHistorico(id, turma, e) {
-  if(e) e.stopPropagation();
-  const a = getAluno(id, turma);
-  if(!a) return;
-  const cores = {pendente:'var(--amber)',andamento:'var(--blue)',concluida:'var(--green)'};
-  const histHtml = a.hist.length===0
-    ? '<div style="color:var(--muted);font-size:12px;">Nenhuma atividade registrada ainda.</div>'
-    : a.hist.map((h,i)=>`<div class="hist-item"><div class="hist-dot" style="background:var(--green)"></div><div><div class="hist-text">${h}</div></div></div>`).join('');
-  openModal(
-    'Histórico de intervenção',
-    a.nome+' · Turma '+turma,
-    `<div style="max-height:240px;overflow-y:auto;">${histHtml}</div>`,
-    `<button class="modal-btn cancel" onclick="closeModal()">Fechar</button>`
-  );
-}
-
-function modalNotificar(id, turma, e) {
-  if(e) e.stopPropagation();
-  const a = getAluno(id, turma);
-  if(!a) return;
-  openModal(
-    'Notificar família',
-    'Enviar mensagem sobre '+a.nome,
-    `<div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Selecione o tipo de notificacao:</div>
-     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
-       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="radio" name="tipo" value="frequencia" checked> Alerta de frequencia escolar</label>
-       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="radio" name="tipo" value="desempenho"> Alerta de desempenho acadêmico</label>
-       <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="radio" name="tipo" value="reuniao"> Convocação para reunião</label>
-     </div>
-     <textarea class="modal-textarea" id="msg-textarea" placeholder="Mensagem adicional para a família (opcional)..."></textarea>`,
-    `<button class="modal-btn cancel" onclick="closeModal()">Cancelar</button>
-     <button class="modal-btn warn" onclick="confirmarNotificacao('${id}','${turma}')">Enviar notificação</button>`
-  );
-}
-
-function confirmarNotificacao(id, turma) {
-  const a = getAluno(id, turma);
-  const tipo = document.querySelector('input[name="tipo"]:checked')?.value || 'geral';
-  a.hist.push('Familia notificada ('+tipo+') em '+hojeStr());
-  saveInterventionState();
-  closeModal();
-  toast('Notificação enviada para a família de '+a.nome+'!', 'success');
-  renderIntervencoes();
-}
-
-function modalRegistrar(id, turma, e) {
-  if(e) e.stopPropagation();
-  const a = getAluno(id, turma);
-  if(!a) return;
-  openModal(
-    'Registrar observação',
-    a.nome+' · Turma '+turma,
-    `<textarea class="modal-textarea" id="obs-textarea" placeholder="Descreva a observação pedagógica..." style="margin-top:0;min-height:100px;"></textarea>`,
-    `<button class="modal-btn cancel" onclick="closeModal()">Cancelar</button>
-     <button class="modal-btn confirm" onclick="salvarObservacao('${id}','${turma}')">Salvar observação</button>`
-  );
-}
-
-function salvarObservacao(id, turma) {
-  const a = getAluno(id, turma);
-  const obs = document.getElementById('obs-textarea')?.value?.trim();
-  if(!obs){ toast('Escreva a observação antes de salvar.','warn'); return; }
-  a.hist.push(obs+' ('+hojeStr()+')');
-  saveInterventionState();
-  closeModal();
-  toast('Observação registrada com sucesso!','success');
-  renderIntervencoes();
+function acaoInterv(acao, id) {
+  const a = acharAluno(id);
+  if (!a) return;
+  if (acao === 'etapa') {
+    if (a.status === 'pendente') { a.status = 'andamento'; a.prog = 25; registrar(a, 'Intervenção iniciada'); toast(`Intervenção de ${a.nome} iniciada.`); return; }
+    a.prog = Math.min(100, a.prog + 25);
+    if (a.prog === 100) { a.status = 'concluida'; registrar(a, 'Intervenção encerrada'); toast(`Intervenção de ${a.nome} encerrada.`); }
+    else { const e = ETAPAS[a.prog / 25 - 1]; registrar(a, `Etapa registrada: ${e}`); toast(`Etapa registrada: ${e}.`); }
+  }
+  if (acao === 'hist') {
+    abrirDialogo({
+      titulo: 'Histórico', sub: `${a.nome} · ${TURMAS[a.turma].nome}`,
+      corpo: a.hist.length ? `<ol class="historico">${[...a.hist].reverse().map(h => `<li>${esc(h)}</li>`).join('')}</ol>` : '<p>Nada registrado até agora.</p>',
+    });
+  }
+  if (acao === 'obs') {
+    abrirDialogo({
+      titulo: 'Anotar observação', sub: `${a.nome} · ${TURMAS[a.turma].nome}`,
+      corpo: `<div class="campo"><label for="obs">Observação</label><textarea class="textarea" id="obs" maxlength="500"></textarea><span class="ajuda">Fica no histórico do aluno, neste navegador.</span><p class="erro" id="obs-erro" role="alert"></p></div>`,
+      acoes: `<button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-primario" type="button" id="salvar-obs">Salvar</button>`,
+    });
+    $('#salvar-obs').addEventListener('click', () => {
+      const t = $('#obs').value.trim();
+      if (!t) { $('#obs-erro').textContent = 'Escreva a observação antes de salvar.'; $('#obs').focus(); return; }
+      fecharDialogo(); registrar(a, t); toast('Observação salva.');
+    });
+  }
+  if (acao === 'familia') {
+    const r = (n, v, rot, chk) => `<label><input type="radio" name="${n}" value="${v}" ${chk ? 'checked' : ''}> ${rot}</label>`;
+    abrirDialogo({
+      titulo: 'Registrar contato com a família', sub: `${a.nome} · ${TURMAS[a.turma].nome}`,
+      corpo: `<p style="font-size:14px;color:var(--ink-2);margin-bottom:14px">O EduIA não envia mensagens. Registre aqui o contato que você fez.</p>
+        <fieldset style="border:0;padding:0;margin:0"><legend class="campo" style="font-weight:600;font-size:14px;margin-bottom:6px">Assunto</legend>
+        <div class="radio-lista">${r('assunto', 'faltas', 'Faltas', true)}${r('assunto', 'desempenho', 'Desempenho')}${r('assunto', 'reunião', 'Convite para reunião')}</div></fieldset>
+        <fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:6px">Meio</legend>
+        <div class="radio-lista">${r('meio', 'telefone', 'Telefone', true)}${r('meio', 'bilhete', 'Bilhete na agenda')}${r('meio', 'presencial', 'Presencial')}</div></fieldset>
+        <div class="campo"><label for="fam-obs">Resumo da conversa (opcional)</label><textarea class="textarea" id="fam-obs" maxlength="300"></textarea></div>`,
+      acoes: `<button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-primario" type="button" id="salvar-fam">Registrar</button>`,
+    });
+    $('#salvar-fam').addEventListener('click', () => {
+      const as = $('input[name=assunto]:checked').value, me = $('input[name=meio]:checked').value;
+      const o = $('#fam-obs').value.trim();
+      fecharDialogo(); registrar(a, `Contato com a família (${me}): ${as}${o ? '. ' + o : ''}`); toast('Contato registrado no histórico.');
+    });
+  }
 }
