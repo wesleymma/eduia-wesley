@@ -1,23 +1,26 @@
-# EduIA — Dependências Python
-# Instale com: pip install -r requirements.txt
+# EduIA — dependências Python (testado com Python 3.11 a 3.14)
+# pip install -r requirements.txt
 
 # Machine Learning
-scikit-learn==1.4.2
-imbalanced-learn==0.12.2
-shap==0.45.0
-numpy==1.26.4
-pandas==2.2.1
+scikit-learn>=1.5
+imbalanced-learn>=0.12
+shap>=0.46
+numpy>=1.26
+pandas>=2.2
 
 # API
-fastapi==0.111.0
-uvicorn[standard]==0.29.0
-pydantic==2.7.1
-requests==2.31.0
+fastapi>=0.111
+uvicorn[standard]>=0.29
+pydantic>=2.7
 
-# Dashboard
-streamlit==1.34.0
-plotly==5.21.0
+# Dashboard Streamlit
+streamlit>=1.34
+plotly>=5.21
+requests>=2.31
 
-# Visualização (treinamento)
-matplotlib==3.8.4
-seaborn==0.13.2
+# Figuras do treino
+matplotlib>=3.8
+
+# Testes
+pytest>=8
+httpx>=0.27
