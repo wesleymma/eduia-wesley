@@ -1,0 +1,18 @@
+# Normaliza finais de linha: LF no repositório, independente do SO
+* text=auto eol=lf
+
+# Scripts do Windows precisam de CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binários
+*.woff2 binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.mp4 binary
+
+# Arquivos vendorizados/minificados não entram nas estatísticas de linguagem
+frontend/vendor/** linguist-vendored
+docs/dashboard_v3.html linguist-documentation
