@@ -1,251 +1,70 @@
-# 🎓 EduIA — Protótipo Inteligente de Identificação de Dificuldades de Aprendizagem
+# EduIA
 
-<div align="center">
+Painel para professores e coordenação acompanharem alunos do fundamental II com risco de baixo desempenho e de reprovação. O sistema não diagnostica dificuldades de aprendizagem nem transtornos: um Random Forest estima o nível de risco (baixo, médio ou alto) de cada aluno a partir de sete indicadores, e o SHAP mostra quais indicadores pesaram em cada estimativa.
 
-![EduIA Banner](https://img.shields.io/badge/EduIA-Sistema%20de%20IA%20Educacional-6366f1?style=for-the-badge&logo=graduation-cap)
+Trabalho de Conclusão de Curso em Engenharia de Software, UNDB, São Luís/MA.
+Autor: Wesley Matheus Martins Aguiar. Orientador: Prof. Esp. Rodrigo da Conceição Almeida.
 
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.34-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io)
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.4-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
-[![HTML5](https://img.shields.io/badge/HTML5-Dashboard-E34F26?style=flat-square&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
-[![License](https://img.shields.io/badge/Licença-Acadêmica-green?style=flat-square)](LICENSE)
-
-**Trabalho de Conclusão de Curso — Engenharia de Software**  
-**UNDB — São Luís, Maranhão**
-
----
-
-> **Autor:** Wesley Matheus Martins Aguiar  
-> **Orientador:** Prof. Wildemarkes de Almeida da Silva  
-> **Instituição:** UNDB — Centro Universitário
-
-</div>
-
----
-
-## 📋 Sobre o Projeto
-
-O **EduIA** é um Protótipo baseado em Inteligência Artificial desenvolvido para auxiliar professores e coordenadores pedagógicos na **identificação precoce de dificuldades de aprendizagem** em alunos do ensino básico.
-
-O sistema utiliza um modelo de **Random Forest** treinado com dados educacionais sintéticos, com interpretabilidade via **SHAP (SHapley Additive exPlanations)**, e é disponibilizado via **API REST** (FastAPI) e **dashboard interativo** (Streamlit + HTML/CSS/JS).
-
-### 🎯 Problema que Resolve
-
-- Identificação **manual e tardia** de alunos com dificuldades
-- Falta de ferramentas acessíveis para análise pedagógica baseada em dados
-- Ausência de **recomendações automáticas** de intervenções pedagógicas
-
-### ✅ Solução Proposta
-
-| Funcionalidade | Descrição |
-|---|---|
-| 🤖 **Diagnóstico por IA** | Classifica o risco de dificuldade de aprendizagem de cada aluno |
-| 📊 **Dashboard Interativo** | Visualização clara de métricas por turma e aluno |
-| 📋 **Plano de Intervenção** | Recomendações pedagógicas geradas automaticamente |
-| 📈 **Métricas do Modelo** | Transparência total sobre a performance da IA (AUC, F1, SHAP) |
-| 📄 **Exportação CSV** | Relatórios exportáveis para uso externo |
-
----
-
-## 🏗️ Arquitetura do Sistema
+## O que tem aqui
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        EduIA System                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   👩‍🏫 Professor / Coordenador (Usuário)                       │
-│              │                                              │
-│   ┌──────────▼──────────┐    ┌──────────────────────┐      │
-│   │   Frontend Web       │    │  Dashboard Streamlit  │      │
-│   │  (HTML+CSS+JS)       │    │       (Python)        │      │
-│   │  - Login/Auth        │    │  - Análise avançada   │      │
-│   │  - Turmas/Alunos     │    │  - Gráficos Plotly    │      │
-│   │  - Intervenções      │    │  - Métricas do modelo │      │
-│   └──────────┬──────────┘    └──────────┬───────────┘      │
-│              │                           │                  │
-│   ┌──────────▼───────────────────────────▼───────────┐     │
-│   │              API REST (FastAPI)                   │     │
-│   │         POST /predict  |  GET /health             │     │
-│   └──────────────────────┬────────────────────────────┘     │
-│                           │                                  │
-│   ┌───────────────────────▼────────────────────────────┐    │
-│   │           Modelo de Machine Learning               │    │
-│   │     Random Forest + SMOTE + SHAP Explainability    │    │
-│   │          scikit-learn | imbalanced-learn            │    │
-│   └────────────────────────────────────────────────────┘    │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+frontend/            painel web (HTML, CSS e JS puros; funciona sem internet)
+  js/dados-modelo.js gerado a partir do modelo treinado; não edite à mão
+  vendor/            Chart.js e fontes, embarcados
+backend/
+  modelo/treinar.py       treino, validação e figuras
+  modelo/exportar_demo.py passa as turmas de demonstração pelo modelo
+  api/api.py              API FastAPI (/prever, /prever/turma, /metricas)
+  dashboard/app.py        painel Streamlit alternativo
+  tests/                  testes da API (pytest)
+docs/                protótipo antigo e análise técnica
 ```
 
----
+## Como rodar
 
-## 📁 Estrutura do Repositório
+No Windows, `iniciar_demo.bat` faz tudo de uma vez: treina o modelo se ainda não existir, sobe a API e abre o painel.
 
-```
-eduia/
-├── 📂 frontend/                    ← Interface web (sem dependências)
-│   ├── 📄 index.html               ← Ponto de entrada, todas as telas SPA
-│   ├── 📂 css/
-│   │   └── 🎨 style.css            ← Tema escuro, layout responsivo
-│   └── 📂 js/
-│       ├── 🔐 auth.js              ← Login, sessão e controle de perfil
-│       ├── 📊 dashboard.js         ← Métricas gerais e gráficos (Chart.js)
-│       ├── 👥 alunos.js            ← Lista de alunos e diagnóstico IA
-│       ├── 🏫 turmas.js            ← Visão consolidada por turma
-│       ├── 📋 intervencoes.js      ← Planos pedagógicos de intervenção
-│       ├── 📄 relatorios.js        ← Exportação de relatórios CSV
-│       ├── 🤖 modelo.js            ← Métricas e explicabilidade do modelo
-│       ├── ⚙️  config.js           ← Configurações do sistema
-│       ├── 🗺️  navegacao.js        ← Roteamento SPA entre telas
-│       ├── 🛠️  utils.js            ← Toast, modal e utilitários globais
-│       ├── 📦 dados.js             ← Dados de turmas e alunos (mock)
-│       └── 🚀 main.js              ← Inicialização da aplicação
-│
-├── 📂 backend/                     ← Lógica de IA e servidor
-│   ├── 📂 modelo/
-│   │   └── 🧠 treinar.py          ← Pipeline ML: RF + SMOTE + SHAP
-│   ├── 📂 api/
-│   │   └── 🌐 api.py              ← API REST com FastAPI (POST /predict)
-│   ├── 📂 dashboard/
-│   │   └── 📊 app.py              ← Dashboard Streamlit analítico
-│   └── 📦 requirements.txt        ← Dependências Python (pip)
-│
-├── 📂 docs/
-│   └── 🗂️  dashboard_v3.html      ← Protótipo standalone completo
-│
-├── 🚫 .gitignore                  ← Arquivos ignorados (LGPD, artefatos)
-└── 📖 README.md                   ← Este arquivo
-```
+O painel também abre direto no navegador: `frontend/index.html`. Acesso de demonstração: `professor@eduia.com` ou `coordenador@eduia.com`, senha `123456`.
 
----
-
-## 🚀 Como Executar
-
-### Pré-requisitos
-
-- **Python 3.11+** — [python.org](https://python.org)
-- **Navegador moderno** — Chrome, Firefox ou Edge
-- **pip** — gerenciador de pacotes Python
-
----
-
-### 🖥️ Frontend (HTML + CSS + JavaScript)
-
-> Não requer servidor — basta abrir no navegador!
-
-1. Navegue até a pasta `frontend/`
-2. Abra o arquivo `index.html` diretamente no navegador
-
-**Credenciais de acesso para demonstração:**
-
-| 👤 E-mail | 🔑 Senha | 🏷️ Perfil |
-|---|---|---|
-| `professor@eduia.com` | `123456` | Professor |
-| `coordenador@eduia.com` | `123456` | Coordenador |
-
----
-
-### 🐍 Backend (Python)
+Para treinar o modelo, atualizar os dados do painel e usar o simulador:
 
 ```bash
-# 1. Entre na pasta do backend
 cd backend
-
-# 2. (Recomendado) Crie e ative um ambiente virtual
-python -m venv venv
-source venv/bin/activate        # Linux/macOS
-venv\Scripts\activate           # Windows
-
-# 3. Instale as dependências
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # Linux/macOS
 pip install -r requirements.txt
 
-# 4. Treine o modelo de IA
-python modelo/treinar.py
+python modelo/treinar.py        # gera modelo/artefatos/
+python modelo/exportar_demo.py  # atualiza frontend/js/dados-modelo.js
+python -m pytest -q             # 6 testes da API
 
-# 5. Inicie a API REST (porta 8000)
-uvicorn api.api:app --reload --port 8000
-
-# 6. (Opcional) Inicie o Dashboard Streamlit (porta 8501)
-streamlit run dashboard/app.py
+uvicorn api.api:app --port 8000 # o simulador do painel usa esta API
 ```
 
-**Endpoints da API:**
+Documentação interativa da API: http://localhost:8000/docs
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/health` | Verifica se a API está online |
-| `POST` | `/predict` | Envia dados de um aluno e recebe diagnóstico |
+## Modelo
 
----
-
-## 🤖 Modelo de Machine Learning
-
-| Aspecto | Detalhe |
+| Item | Escolha |
 |---|---|
-| **Algoritmo** | Random Forest Classifier |
-| **Balanceamento** | SMOTE (Synthetic Minority Oversampling) |
-| **Explicabilidade** | SHAP Values (TreeExplainer) |
-| **Validação** | Cross-validation estratificada (5-fold) |
-| **Métricas** | AUC-ROC, F1-Score, Precisão, Recall |
+| Classificador | Random Forest (200 árvores) |
+| Comparados | SVM (RBF) e KNN (k=7) |
+| Validação | StratifiedKFold com 10 folds; padronização e SMOTE dentro de cada fold |
+| Teste | 20% separados antes de qualquer ajuste, usados uma vez |
+| Referência | regra simples por frequência e nota de Matemática |
+| Explicação | SHAP TreeExplainer, classe risco alto |
 
-### Variáveis de Entrada
+Indicadores de entrada: frequência, notas de Matemática e Português, reprovações, nível socioeconômico da escola, escola rural e participação em programa social.
 
-O modelo analisa os seguintes indicadores por aluno:
+As métricas atuais estão em `backend/modelo/artefatos/metricas.json` e na tela "Como o risco é calculado" do painel.
 
-- 📊 **Frequência escolar** (%)
-- 📝 **Média de notas** por disciplina
-- 🏠 **Tarefas entregues** (%)
-- 🤝 **Participação** em sala de aula
-- 👨‍👩‍👧 **Engajamento familiar**
-- 📚 **Histórico de reprovações**
+## Limites
 
----
+- O treino usa 2.000 registros sintéticos. As métricas mostram que o modelo recupera os perfis do gerador, não o desempenho com alunos reais.
+- Nível socioeconômico e programa social influenciam a estimativa. Use o resultado para priorizar apoio, não para rotular alunos.
+- O acesso do painel é demonstrativo e os registros de intervenção ficam no navegador. Dados reais de estudantes exigem backend com autenticação e adequação à LGPD.
 
-## 🔒 Privacidade e LGPD
+## Licença
 
-Este sistema foi projetado com **privacidade por design**:
-
-- ✅ Nenhum dado real de aluno é armazenado no repositório
-- ✅ Arquivos `.csv` e `.pkl` são ignorados pelo `.gitignore`
-- ✅ Dados utilizados no desenvolvimento são 100% sintéticos
-- ✅ A API não persiste dados recebidos nas requisições
-
----
-
-## 🛠️ Stack Tecnológica
-
-### Frontend
-| Tecnologia | Versão | Uso |
-|---|---|---|
-| HTML5 | — | Estrutura das telas |
-| CSS3 | — | Tema escuro e responsividade |
-| JavaScript ES6+ | — | Lógica e interatividade |
-| Chart.js | CDN | Gráficos e visualizações |
-
-### Backend
-| Tecnologia | Versão | Uso |
-|---|---|---|
-| Python | 3.11+ | Linguagem base |
-| FastAPI | 0.111 | API REST |
-| scikit-learn | 1.4.2 | Modelo de ML |
-| SHAP | 0.45 | Explicabilidade |
-| Streamlit | 1.34 | Dashboard analítico |
-| Plotly | 5.21 | Gráficos interativos |
-
----
-
-## 📄 Licença
-
-Este projeto foi desenvolvido exclusivamente para fins **acadêmicos** como Trabalho de Conclusão de Curso (TCC) na UNDB.  
-Uso, reprodução ou distribuição deve citar o autor e a instituição de ensino.
-
----
-
-<div align="center">
-
-**Desenvolvido com ❤️ por Wesley Matheus Martins Aguiar**  
-UNDB — Engenharia de Software — São Luís/MA — 2025/2026
-
-</div>
+Uso acadêmico. Cite autor e instituição ao reutilizar.

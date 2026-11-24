@@ -6,7 +6,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
-## [1.0.0] — 2025-06-01 — Versão Final TCC
+## [1.1.0] — 2026-11-02
+
+### Interface
+- Nova identidade visual: papel claro, tinta escura e azul de azulejo; títulos em Newsreader, texto em Public Sans; tema escuro opcional.
+- Risco exibido com forma, cor e texto (triângulo, losango, círculo), legível para daltônicos.
+- Tela da turma abre com um resumo em uma frase, lista ordenável e ficha do aluno ao lado.
+- Ficha mostra fatores SHAP em barras divergentes, em pontos percentuais.
+- Intervenções em quadro (a iniciar, em andamento, encerradas) com etapas e histórico.
+- Novas telas: Escola (comparação e CSV), Como o risco é calculado, Simulador ligado à API.
+- Navegação por endereço (#turma, #alunos…), botão voltar funciona, diálogos nativos com Esc.
+- Chart.js e fontes embarcados: o painel funciona sem internet.
+- Removidas opções que não faziam nada (troca de algoritmo, limiares, período).
+
+### Dados e modelo
+- Números do painel saem do modelo treinado (exportar_demo.py), não mais digitados à mão.
+- SMOTE passou para dentro da validação cruzada; escolha do modelo pela CV, não pelo teste.
+- Corrigido erro 500 em /prever com shap ≥ 0.45 e figura SHAP que saía como "interaction values".
+- Direção do SHAP agora se refere sempre à classe risco alto.
+- Comparação com regra simples sem modelo.
+
+## [1.0.0] — 2026-06-01 — Versão inicial do TCC
 
 ### ✨ Adicionado — Frontend
 - Dashboard web completo com tema escuro e design responsivo
