@@ -6,7 +6,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
-## [1.2.0] — 2026-11-26
+## [1.2.0] — 2026-11-12
 
 ### Interface
 - Nova tela de login centralizada, com logo do EduIA e cartões das contas de demonstração.
