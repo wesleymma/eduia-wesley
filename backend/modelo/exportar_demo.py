@@ -109,6 +109,25 @@ def montar_turma(codigo, n, props, seed):
     return alunos
 
 
+def _validacao_externa():
+    """Resumo de modelo/experimentos.py, se já tiver sido rodado."""
+    caminho = os.path.join(BACKEND, "modelo", "artefatos", "experimentos", "resultados.json")
+    if not os.path.exists(caminho):
+        return None
+    with open(caminho, encoding="utf-8") as f:
+        u = json.load(f)["uci"]
+    rf = u["cv"]["Random Forest"]
+    return {
+        "fonte": u["fonte"], "rotulo": u["rotulo"], "n": u["n"], "validacao": u["validacao"],
+        "regraDescricao": u["regra_descricao"],
+        "rf": {k: rf[k] for k in ("f1", "acc", "recall_alto", "precisao_alto", "auc")},
+        "regra": u["regra_cv"],
+        "semNotasF1": u["cv_rf_sem_notas"]["f1"], "semSocioF1": u["cv_rf_sem_socio"]["f1"],
+        "shap": u["shap_global_alto"][:4],
+        "grupos": u["grupos"]["com_socio"],
+    }
+
+
 def main():
     turmas = {cod: {"alunos": montar_turma(cod, *cfg)} for cod, cfg in TURMAS.items()}
     m = metricas_cache
@@ -124,6 +143,7 @@ def main():
         "matriz": m["matriz_confusao"],
         "porClasse": m["por_classe"],
         "shapGlobal": m["shap_global_alto"],
+        "externa": _validacao_externa(),
     }
     os.makedirs(os.path.dirname(SAIDA), exist_ok=True)
     with open(SAIDA, "w", encoding="utf-8") as f:

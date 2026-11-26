@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="EduIA: acompanhamento de risco de dificuldade de aprendizagem por turma.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231d4e89%22/%3E%3Cg%20fill%3D%22%23fffdf8%22%3E%3Crect%20x%3D%228%22%20y%3D%227.5%22%20width%3D%223.6%22%20height%3D%2217%22%20rx%3D%221%22/%3E%3Crect%20x%3D%228%22%20y%3D%227.5%22%20width%3D%2216.5%22%20height%3D%223.6%22%20rx%3D%221%22/%3E%3Crect%20x%3D%228%22%20y%3D%2214.2%22%20width%3D%2212%22%20height%3D%223.6%22%20rx%3D%221%22/%3E%3Crect%20x%3D%228%22%20y%3D%2220.9%22%20width%3D%227.5%22%20height%3D%223.6%22%20rx%3D%221%22/%3E%3C/g%3E%3Crect%20x%3D%2218.5%22%20y%3D%2220.9%22%20width%3D%223.6%22%20height%3D%223.6%22%20rx%3D%221.8%22%20fill%3D%22%23e0a43a%22/%3E%3C/svg%3E">
 <title>EduIA · Acompanhamento de turmas</title>
 <link rel="stylesheet" href="css/style.css">
 <script>
@@ -18,6 +19,7 @@
 
 <!-- Ícones (traço único, 1.6px) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="var(--azul)"/><g fill="var(--on-azul)"><rect x="8" y="7.5" width="3.6" height="17" rx="1"/><rect x="8" y="7.5" width="16.5" height="3.6" rx="1"/><rect x="8" y="14.2" width="12" height="3.6" rx="1"/><rect x="8" y="20.9" width="7.5" height="3.6" rx="1"/></g><rect x="18.5" y="20.9" width="3.6" height="3.6" rx="1.8" fill="var(--sinal)"/></symbol>
   <symbol id="i-turma" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9h18M8 4v16"/></symbol>
   <symbol id="i-alunos" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3.2 3-5 5.5-5s4.7 1.8 5.5 5"/><path d="M15.5 5.2a3 3 0 0 1 0 5.6M17.5 14.3c1.5.6 2.6 2.2 3 4.7"/></symbol>
   <symbol id="i-interv" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><path d="M8 5.5H5.5v15h13v-15H16"/><path d="m9 13 2 2 4-4.5"/></symbol>
@@ -32,55 +34,38 @@
 <!-- ACESSO -->
 <main class="login" id="login">
   <section class="login-form" aria-labelledby="login-titulo">
-    <div class="marca"><span class="marca-nome">EduIA</span><span class="marca-sub">acompanhamento de turmas</span></div>
-    <div>
-      <h1 id="login-titulo">Entrar</h1>
-      <p class="lead" style="margin-top:8px">Use o e-mail da escola para ver suas turmas, os alunos que precisam de atenção e as intervenções em curso.</p>
-    </div>
-    <form id="form-login" novalidate style="display:grid;gap:16px">
-      <div class="campo">
-        <label for="login-email">E-mail</label>
-        <input class="input" id="login-email" type="email" autocomplete="username" required>
+    <div class="login-caixa">
+      <div class="marca"><svg class="marca-simbolo" aria-hidden="true"><use href="#logo"/></svg><span class="marca-nome">EduIA</span></div>
+      <div class="login-cartao">
+      <h1 id="login-titulo">Acesse sua conta</h1>
+      <p class="lead">Entre com o e-mail da escola.</p>
+      <form id="form-login" novalidate class="login-campos">
+        <div class="campo">
+          <label for="login-email">E-mail institucional</label>
+          <input class="input" id="login-email" type="email" autocomplete="username" placeholder="nome@escola.ma.gov.br" required>
+        </div>
+        <div class="campo">
+          <label for="login-senha">Senha</label>
+          <input class="input" id="login-senha" type="password" autocomplete="current-password" required>
+        </div>
+        <p class="erro" id="login-erro" role="alert"></p>
+        <button class="btn btn-primario btn-grande" type="submit">Entrar</button>
+      </form>
+      <div class="demo-acesso">
+        <span>Contas de demonstração · senha 123456</span>
+        <button type="button" data-demo="professor@eduia.com"><b>Professora</b><small>professor@eduia.com</small></button>
+        <button type="button" data-demo="coordenador@eduia.com"><b>Coordenação</b><small>coordenador@eduia.com</small></button>
       </div>
-      <div class="campo">
-        <label for="login-senha">Senha</label>
-        <input class="input" id="login-senha" type="password" autocomplete="current-password" required>
       </div>
-      <p class="erro" id="login-erro" role="alert"></p>
-      <button class="btn btn-primario btn-grande" type="submit">Entrar</button>
-    </form>
-    <div class="demo-acesso">
-      Acesso de demonstração:
-      <button type="button" data-demo="professor@eduia.com">professor</button> ou
-      <button type="button" data-demo="coordenador@eduia.com">coordenação</button>, senha 123456.
     </div>
+    <p class="login-rodape">UNDB · Engenharia de Software · TCC 2026</p>
   </section>
-  <aside class="login-painel" aria-hidden="true">
-    <svg class="azulejo" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="tile" width="96" height="96" patternUnits="userSpaceOnUse">
-          <g fill="none" stroke="#fff" stroke-width="2">
-            <rect x="1" y="1" width="94" height="94"/>
-            <circle cx="48" cy="48" r="20"/>
-            <path d="M48 8 C58 28 68 38 88 48 C68 58 58 68 48 88 C38 68 28 58 8 48 C28 38 38 28 48 8Z"/>
-            <path d="M1 1 L18 18 M95 1 L78 18 M1 95 L18 78 M95 95 L78 78"/>
-          </g>
-          <circle cx="48" cy="48" r="5" fill="#fff"/>
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#tile)"/>
-    </svg>
-    <div class="resumo">
-      <p id="login-resumo">Três turmas do fundamental II, acompanhadas aluno a aluno.</p>
-      <small>Versão de demonstração com alunos fictícios.</small>
-    </div>
-  </aside>
 </main>
 
 <!-- APLICAÇÃO -->
 <div class="app" id="app">
   <aside class="lateral" aria-label="Navegação principal">
-    <div class="marca"><span class="marca-nome">EduIA</span></div>
+    <div class="marca"><svg class="marca-simbolo" aria-hidden="true"><use href="#logo"/></svg><span class="marca-nome">EduIA</span></div>
     <div class="escola"><strong id="escola-nome"></strong><span id="escola-cidade"></span></div>
     <nav class="nav" id="nav">
       <span class="nav-grupo">Sala de aula</span>

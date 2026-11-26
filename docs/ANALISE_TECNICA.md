@@ -28,9 +28,22 @@ Pontos encontrados na revisão e o que foi feito com cada um.
 | Vencedor escolhido pelo teste | Teste deixa de ser independente | Escolha pela CV |
 | IN_PROG_AEE mapeado como programa social | AEE é educação especial | Comentado e trocado |
 
+## Validação com dados reais (modelo/experimentos.py)
+
+382 alunos reais (UCI Student Performance). Rótulo: nota final do ano. Validação 5x5.
+
+| Método | F1 | Reprovações encontradas | Alertas corretos | AUC |
+|---|---|---|---|---|
+| Random Forest | 70,4% ± 3,0 | 74,5% ± 8,9 | 71,2% ± 5,5 | 0,871 |
+| Regra do 1º período | 71,5% ± 4,9 | 80,1% ± 7,8 | 69,2% ± 5,5 | — |
+
+- Modelo e regra empatam. A vantagem de 91% contra 67% existe só nos dados sintéticos e não deve ser usada como argumento.
+- Sem as notas do 1º período, o F1 cai para 42%. Sem as variáveis socioeconômicas, não muda (70,4%).
+- Falso alarme: 21,7% entre filhos de pais com até o fundamental, 13,4% nos demais. Tirar as variáveis socioeconômicas não reduz essa diferença (25,8% contra 10,7%).
+- No teste único de 77 alunos o modelo marcou 76,6% contra 64,9% da regra. Com amostra tão pequena, a validação cruzada é o número confiável.
+
 ## Para a defesa
 
-- Rodando hoje, SVM empata com o Random Forest na CV (diferença menor que um desvio padrão). O Random Forest fica por causa do SHAP exato por aluno. A justificativa sai em metricas.json.
-- A regra simples acerta 67%; o modelo, 91%. Isso responde "por que usar ML".
-- Com dados sintéticos, as métricas medem a recuperação dos perfis do gerador. Diga isso antes que a banca pergunte.
-- Atualize no texto do TCC os números e a figura SHAP com os novos artefatos.
+- O valor do EduIA está em ordenar os alunos por probabilidade (AUC 0,87; a regra não ordena), explicar cada caso com SHAP e organizar as intervenções. Na classificação pura, ele empata com uma regra que o professor já aplica.
+- Na CV dos dados sintéticos, o SVM empata com o Random Forest. O Random Forest fica por causa do SHAP exato por aluno.
+- Atualize no TCC os números, a figura SHAP e as capturas de tela com os novos artefatos.

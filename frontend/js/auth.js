@@ -30,9 +30,6 @@ function iniciarAcesso() {
   }));
   $('#btn-sair').addEventListener('click', sair);
 
-  const total = todosAlunos().length;
-  if (total) $('#login-resumo').textContent =
-    `${total} alunos em ${Object.keys(TURMAS).length} turmas do fundamental II, acompanhados um a um.`;
 
   const s = sessaoAtual();
   if (s) entrar(s, true); else $('#login-email').focus();
@@ -53,3 +50,4 @@ function sair() {
   history.replaceState(null, '', location.pathname);
   $('#login-email').focus();
 }
+

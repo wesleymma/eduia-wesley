@@ -19,7 +19,7 @@
   --alto:#a3261b; --alto-soft:#f5e1dc;
   --medio:#855700; --medio-soft:#f3e8cf;
   --baixo:#2f6b3a; --baixo-soft:#e0ecdc;
-  --focus:#1d4e89;
+  --focus:#1d4e89; --sinal:#e0a43a;
   --serif:"Newsreader",Georgia,"Times New Roman",serif;
   --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --r:6px; --r-sm:4px;
@@ -35,7 +35,7 @@
   --alto:#f0907f; --alto-soft:#3a2220;
   --medio:#e2b45b; --medio-soft:#352b17;
   --baixo:#8ec79b; --baixo-soft:#1e2f22;
-  --focus:#8fb5e6;
+  --focus:#8fb5e6; --sinal:#e8b04a;
   color-scheme:dark;
 }
 
@@ -57,28 +57,35 @@ a{color:var(--azul)}
 .app{display:none}
 body.autenticado .app{display:grid}
 body.autenticado .login{display:none}
-.login{display:grid;grid-template-columns:minmax(360px,480px) 1fr;min-height:100dvh}
-.login-form{padding:var(--sp-7) clamp(24px,5vw,64px);display:flex;flex-direction:column;justify-content:center;gap:var(--sp-5);background:var(--sheet);border-right:1px solid var(--rule)}
-.marca{display:flex;align-items:baseline;gap:10px}
-.marca-nome{font-family:var(--serif);font-size:28px;font-weight:600;color:var(--azul)}
-.marca-sub{font-size:13px;color:var(--ink-2)}
-.login-form h1{font-size:32px}
-.login-form .lead{color:var(--ink-2);max-width:38ch}
+.login{min-height:100dvh;display:flex;background:var(--paper)}
+.login-form{flex:1;display:flex;flex-direction:column;align-items:center;padding:32px 16px}
+.login-caixa{flex:1;display:flex;flex-direction:column;justify-content:center;width:100%;max-width:420px;padding:24px 0}
+.login-cartao{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:36px 36px 28px;box-shadow:0 1px 2px rgba(28,27,24,.04),0 8px 24px rgba(28,27,24,.06)}
+.login-caixa>.marca{justify-content:center;margin-bottom:24px}
+.login-caixa h1{font-size:24px}
+.login-caixa .lead{color:var(--ink-2);margin-top:8px}
+.login-campos{display:grid;gap:18px;margin-top:24px}
+.login-campos .erro{min-height:0;margin:-6px 0 0}
+.login-campos .erro:empty{display:none}
+.marca{display:flex;align-items:center;gap:10px}
+.marca-simbolo{width:30px;height:30px;flex-shrink:0}
+.marca-nome{font-family:var(--serif);font-size:25px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
 .campo{display:flex;flex-direction:column;gap:6px}
 .campo label{font-size:14px;font-weight:600}
 .campo .ajuda{font-size:13px;color:var(--ink-2)}
-.input,.select,.textarea{width:100%;min-height:44px;padding:10px 12px;background:var(--sheet);border:1px solid var(--rule-2);border-radius:var(--r);transition:border-color var(--dur)}
+.input,.select,.textarea{width:100%;min-height:46px;padding:10px 12px;background:var(--sheet);border:1px solid var(--rule-2);border-radius:var(--r);transition:border-color var(--dur),box-shadow var(--dur)}
+.input::placeholder{color:var(--ink-3)}
 .input:hover,.select:hover,.textarea:hover{border-color:var(--ink-3)}
-.input:focus,.select:focus,.textarea:focus{border-color:var(--azul);outline:2px solid var(--azul-soft);outline-offset:0}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--azul);outline:0;box-shadow:0 0 0 3px var(--azul-soft)}
 .textarea{min-height:110px;resize:vertical}
 .erro{color:var(--alto);font-size:14px;min-height:21px}
-.demo-acesso{font-size:13px;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:var(--sp-4)}
-.demo-acesso button{background:none;border:0;padding:0;color:var(--azul);text-decoration:underline;cursor:pointer;font-size:13px}
-.login-painel{position:relative;background:var(--azul);color:var(--on-azul);display:flex;align-items:flex-end;padding:var(--sp-7);overflow:hidden}
-.login-painel svg.azulejo{position:absolute;inset:0;width:100%;height:100%;opacity:.16}
-.login-painel .resumo{position:relative;max-width:520px}
-.login-painel .resumo p{font-family:var(--serif);font-size:clamp(22px,2.4vw,30px);line-height:1.3}
-.login-painel .resumo small{display:block;margin-top:var(--sp-4);font-size:14px;opacity:.85}
+.demo-acesso{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.demo-acesso>span{grid-column:1/-1;font-size:13px;color:var(--ink-2)}
+.demo-acesso button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border:1px dashed var(--rule-2);border-radius:var(--r);background:transparent;cursor:pointer;text-align:left;transition:border-color var(--dur),background var(--dur)}
+.demo-acesso button:hover{border-color:var(--azul);background:var(--azul-soft)}
+.demo-acesso b{font-size:14px;font-weight:600}
+.demo-acesso small{font-size:12px;color:var(--ink-2)}
+.login-rodape{font-size:13px;color:var(--ink-3);text-align:center}
 
 /* ── Botões ────────────────────────────────────────────── */
 .btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:8px 16px;border-radius:var(--r);border:1px solid var(--rule-2);background:var(--sheet);font-size:14px;font-weight:500;cursor:pointer;transition:background var(--dur),border-color var(--dur),color var(--dur);white-space:nowrap}
@@ -146,7 +153,7 @@ body.autenticado .login{display:none}
 .tabela-wrap{overflow-x:auto;position:relative}
 table.tabela{width:100%;border-collapse:collapse;font-size:14px}
 .tabela th{text-align:left;font-size:13px;font-weight:600;color:var(--ink-2);padding:10px 12px;border-bottom:1px solid var(--rule-2);white-space:nowrap;background:var(--sheet)}
-.tabela th.num,.tabela td.num{text-align:right}
+.tabela th.num,.tabela td.num{text-align:right;white-space:nowrap}
 .tabela th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
 .tabela th button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .tabela th[aria-sort] button::after{content:"";width:0;height:0;border:4px solid transparent}
@@ -329,7 +336,6 @@ dialog[open]{animation:entra var(--dur) var(--ease)}
   .conteudo{padding:var(--sp-4) var(--sp-4) var(--sp-6)}
   .grade-2,.grade-sim,.quadro{grid-template-columns:minmax(0,1fr)}
   .abertura{grid-template-columns:1fr}
-  .login{grid-template-columns:1fr}
-  .login-painel{min-height:220px;padding:var(--sp-5)}
+  .login-cartao{padding:24px 20px}
   .tabela .opcional{display:none}
 }

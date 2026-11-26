@@ -6,6 +6,8 @@
 # 🔒 LGPD — Dados sensíveis de alunos (NUNCA versionar)
 # ------------------------------------------------------------
 *.csv
+# Exceção: dados públicos e anonimizados da UCI, usados na validação externa
+!backend/dados/uci/*.csv
 dados_reais/
 alunos_*.json
 

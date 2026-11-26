@@ -6,6 +6,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.2.0] — 2026-11-26
+
+### Interface
+- Nova tela de login centralizada, com logo do EduIA e cartões das contas de demonstração.
+- Logo e símbolo da marca em docs/marca/.
+- Tela "Como o risco é calculado" mostra a validação com dados reais.
+
+### Dados e modelo
+- Validação com dados reais: UCI Student Performance, 382 alunos (modelo/experimentos.py). F1 de 70,4%, empate com a regra da nota do 1º período.
+- Ablação das variáveis socioeconômicas e análise de falso alarme por grupo.
+- Nos dados sintéticos, a vantagem do modelo sobre a regra simples vem do gerador e não vale como argumento.
+
+### Documentação
+- Figuras do TCC em docs/figuras_tcc/ e análise técnica atualizada.
+
 ## [1.1.0] — 2026-11-02
 
 ### Interface

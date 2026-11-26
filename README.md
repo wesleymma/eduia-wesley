@@ -14,6 +14,8 @@ frontend/            painel web (HTML, CSS e JS puros; funciona sem internet)
 backend/
   modelo/treinar.py       treino, validação e figuras
   modelo/exportar_demo.py passa as turmas de demonstração pelo modelo
+  modelo/experimentos.py  validação com dados reais (UCI) e ablação socioeconômica
+  dados/uci/              Student Performance (UCI), dados públicos
   api/api.py              API FastAPI (/prever, /prever/turma, /metricas)
   dashboard/app.py        painel Streamlit alternativo
   tests/                  testes da API (pytest)
@@ -36,6 +38,7 @@ python -m venv .venv
 pip install -r requirements.txt
 
 python modelo/treinar.py        # gera modelo/artefatos/
+python modelo/experimentos.py   # validação com 382 alunos reais
 python modelo/exportar_demo.py  # atualiza frontend/js/dados-modelo.js
 python -m pytest -q             # 6 testes da API
 
@@ -61,7 +64,7 @@ As métricas atuais estão em `backend/modelo/artefatos/metricas.json` e na tela
 
 ## Limites
 
-- O treino usa 2.000 registros sintéticos. As métricas mostram que o modelo recupera os perfis do gerador, não o desempenho com alunos reais.
+- O modelo do painel usa 2.000 registros sintéticos. Com 382 alunos reais (UCI), o mesmo método chega a F1 de 70% e empata com a regra "menor nota do 1º período abaixo de 10".
 - Nível socioeconômico e programa social influenciam a estimativa. Use o resultado para priorizar apoio, não para rotular alunos.
 - O acesso do painel é demonstrativo e os registros de intervenção ficam no navegador. Dados reais de estudantes exigem backend com autenticação e adequação à LGPD.
 
